@@ -15,7 +15,8 @@ compiled with the `um_embed_ffmpeg` build tag and extracts them on first use. Se
 
 1. **`UM_FFMPEG` / `UM_FFPROBE`** env var — an explicit path. Override / escape hatch.
 2. **Embedded binary** — present only in `-tags um_embed_ffmpeg` builds; extracted
-   once to `os.UserCacheDir()/unlock-music/ffmpeg/<version>/`.
+   to a temporary dir and removed on exit (the CLI defers `ffmpeg.Cleanup()`, the
+   GUI calls it from `OnShutdown`), so nothing persists between runs.
 3. **PATH** — the dev fallback (default `go build` embeds nothing) and the only
    option on platforms not yet bundled.
 

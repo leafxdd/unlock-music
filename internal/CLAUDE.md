@@ -78,7 +78,7 @@ Uses `fsnotify` watcher. First runs `ProcessDir` on existing files, then watches
 | `ffprobe.go` | `ProbeReader()` -- JSON probe for format/tags/streams via stdin pipe |
 | `meta_flac.go` | `updateMetaFlac()` -- native FLAC metadata writing via `go-flac` (avoids ffmpeg for FLAC) |
 | `options.go` | `ffmpegBuilder` / `inputBuilder` / `outputBuilder` -- fluent builder for ffmpeg CLI args |
-| `resolve.go` | `ResolveBinary()` / `Available()` / `SupportsMetadata()` -- locate ffmpeg/ffprobe (`UM_FFMPEG` env -> embedded -> PATH), extract the embedded binary to the user cache dir |
+| `resolve.go` | `ResolveBinary()` / `Available()` / `SupportsMetadata()` / `Cleanup()` -- locate ffmpeg/ffprobe (`UM_FFMPEG` env -> embedded -> PATH); extract the embedded binary to a temp dir that `Cleanup()` removes on exit |
 | `embed_*.go` | Per-platform embedded binaries behind the `um_embed_ffmpeg` build tag; `embed_off.go` is the default (no embed); `bin/<goos>_<goarch>/` holds the gzipped binaries (built by `build/ffmpeg/build.sh`) |
 | `hide_windows.go` | `hideWindow()` -- sets `CREATE_NO_WINDOW` on Windows to suppress console popup |
 | `hide_other.go` | `hideWindow()` -- no-op on non-Windows |
