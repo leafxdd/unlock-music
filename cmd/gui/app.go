@@ -79,6 +79,26 @@ func (a *App) SelectInputFiles() ([]string, error) {
 	})
 }
 
+// DropTarget describes a dropped path so the frontend can persist the input
+// directory when a folder is dropped.
+type DropTarget struct {
+	Dir   string `json:"dir"`   // dir to remember: the path itself if a dir, else its parent
+	IsDir bool   `json:"isDir"` // whether the dropped path is a directory
+}
+
+// ResolveDrop classifies the first dropped path via os.Stat, so the frontend
+// can reliably tell a folder drop from a file drop.
+func (a *App) ResolveDrop(paths []string) DropTarget {
+	if len(paths) == 0 {
+		return DropTarget{}
+	}
+	p := paths[0]
+	if info, err := os.Stat(p); err == nil && info.IsDir() {
+		return DropTarget{Dir: p, IsDir: true}
+	}
+	return DropTarget{Dir: filepath.Dir(p), IsDir: false}
+}
+
 func (a *App) IsProcessing() bool {
 	a.mu.Lock()
 	defer a.mu.Unlock()

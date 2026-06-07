@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class DropTarget {
+	    dir: string;
+	    isDir: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new DropTarget(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.dir = source["dir"];
+	        this.isDir = source["isDir"];
+	    }
+	}
 	export class Settings {
 	    inputDir: string;
 	    outputDir: string;

@@ -55,11 +55,13 @@ async function startProcessing() {
 onMounted(() => {
   window.runtime.OnFileDrop(async (_x: number, _y: number, paths: string[]) => {
     if (!paths?.length) return
-    const first = paths[0]
-    const isFile = first.includes('.') && !first.endsWith('/')
-    const dir = isFile ? first.replace(/[\\/][^\\/]+$/, '') : first
-    settingsStore.settings.outputDir = dir
-    await settingsStore.save()
+    const t = await backend.resolveDrop(paths)
+    if (t.dir) {
+      settingsStore.settings.outputDir = t.dir
+      // Persist the input dir on a folder drop so it is restored next launch.
+      if (t.isDir) settingsStore.settings.inputDir = t.dir
+      await settingsStore.save()
+    }
     await queueStore.addPaths(paths)
   }, true)
 })

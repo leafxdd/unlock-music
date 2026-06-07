@@ -10,6 +10,8 @@ export function IsProcessing():Promise<boolean>;
 
 export function ListFiles(arg1:Array<string>):Promise<Array<string>>;
 
+export function ResolveDrop(arg1:Array<string>):Promise<main.DropTarget>;
+
 export function SaveSettings(arg1:main.Settings):Promise<void>;
 
 export function SelectInputDir():Promise<string>;

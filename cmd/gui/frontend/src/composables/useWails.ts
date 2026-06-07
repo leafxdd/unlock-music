@@ -15,6 +15,7 @@ declare global {
           StopProcessing(): Promise<void>
           IsProcessing(): Promise<boolean>
           ListFiles(paths: string[]): Promise<string[]>
+          ResolveDrop(paths: string[]): Promise<{ dir: string; isDir: boolean }>
           CheckFFmpeg(): Promise<boolean>
         }
       }
@@ -49,5 +50,6 @@ export const backend = {
   stopProcessing: () => window.go.main.App.StopProcessing(),
   isProcessing: () => window.go.main.App.IsProcessing(),
   listFiles: (paths: string[]) => window.go.main.App.ListFiles(paths),
+  resolveDrop: (paths: string[]) => window.go.main.App.ResolveDrop(paths),
   checkFFmpeg: () => window.go.main.App.CheckFFmpeg(),
 }

@@ -18,6 +18,10 @@ export function ListFiles(arg1) {
   return window['go']['main']['App']['ListFiles'](arg1);
 }
 
+export function ResolveDrop(arg1) {
+  return window['go']['main']['App']['ResolveDrop'](arg1);
+}
+
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
 }
