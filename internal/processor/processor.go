@@ -228,10 +228,15 @@ func (p *Processor) process(ctx context.Context, inputFile string, allDec []comm
 			}
 
 			if params.Meta == nil {
-				audio, err = os.Open(params.Audio)
+				// Reopen the temp file as the audio source. Close it on return so
+				// the deferred os.Remove(params.Audio) above can succeed on Windows,
+				// where removing a file with an open handle fails.
+				tmpAudio, err := os.Open(params.Audio)
 				if err != nil {
 					return fmt.Errorf("updateAudioMeta open temp file: %w", err)
 				}
+				defer tmpAudio.Close()
+				audio = tmpAudio
 			}
 		}
 	}
