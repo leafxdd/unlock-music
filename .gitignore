@@ -1,0 +1,29 @@
+# IDE / editor
+.idea
+/.vscode
+
+# OS
+.DS_Store
+
+# Go build output (root binaries)
+/um
+/gui
+/um-gui
+*.exe
+
+# Release archives / scratch
+/um-*.tar.gz
+/um-*.zip
+/dist
+/prepare
+
+# Wails / frontend generated artifacts
+node_modules/
+/cmd/gui/frontend/dist/
+/cmd/gui/frontend/package.json.md5
+/cmd/gui/build/bin/
+
+# Local tooling / agent state
+.ace-tool/
+.claude/
+.remember/
