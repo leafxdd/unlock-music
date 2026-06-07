@@ -61,6 +61,12 @@ func parseBitrateAndType(header []byte) (int, string) {
 	sep := strings.IndexFunc(tmp, func(r rune) bool {
 		return !unicode.IsDigit(r)
 	})
+	if sep < 0 {
+		// No non-digit separator (all digits or empty): treat the whole field as
+		// the bitrate with no extension, rather than slicing with sep == -1.
+		bitrate, _ := strconv.Atoi(tmp)
+		return bitrate, ""
+	}
 
 	bitrate, _ := strconv.Atoi(tmp[:sep]) // just ignore the error
 	outputExt := strings.ToLower(tmp[sep:])
@@ -78,23 +84,20 @@ func (d *Decoder) Read(b []byte) (int, error) {
 
 func padOrTruncate(raw string, length int) string {
 	lenRaw := len(raw)
-	out := raw
 	if lenRaw == 0 {
-		out = string(make([]byte, length))
-	} else if lenRaw > length {
-		out = raw[:length]
-	} else if lenRaw < length {
-		_tmp := make([]byte, 32)
-		for i := range 32 {
-			_tmp[i] = raw[i%lenRaw]
-		}
-		out = string(_tmp)
+		return string(make([]byte, length))
 	}
-	return out
+	if lenRaw >= length {
+		return raw[:length]
+	}
+	out := make([]byte, length)
+	for i := range out {
+		out[i] = raw[i%lenRaw]
+	}
+	return string(out)
 }
 
 func init() {
 	// Kuwo Mp3/Flac
 	common.RegisterDecoder("kwm", false, NewDecoder)
-	common.RegisterDecoder("kwm", false, common.NewRawDecoder)
 }

@@ -113,6 +113,15 @@ func (c *rc4Cipher) encASegment(buf []byte, offset int) {
 }
 func (c *rc4Cipher) getSegmentSkip(id int) int {
 	seed := int(c.key[id%c.n])
+	if seed == 0 {
+		// A zero key byte would divide by zero below (yielding ±Inf/NaN and,
+		// after the int64 conversion, an out-of-range key index). Skip nothing.
+		return 0
+	}
 	idx := int64(float64(c.hash) / float64((id+1)*seed) * 100.0)
-	return int(idx % int64(c.n))
+	skip := int(idx % int64(c.n))
+	if skip < 0 {
+		skip += c.n
+	}
+	return skip
 }

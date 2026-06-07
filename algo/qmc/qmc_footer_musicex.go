@@ -25,18 +25,15 @@ type MusicExTagV1 struct {
 }
 
 func NewMusicExTag(f io.ReadSeeker) (*MusicExTagV1, error) {
-	_, err := f.Seek(-16, io.SeekEnd)
+	endMinus16, err := f.Seek(-16, io.SeekEnd)
 	if err != nil {
 		return nil, fmt.Errorf("musicex seek error: %w", err)
 	}
+	fileSize := endMinus16 + 16
 
 	buffer := make([]byte, 16)
-	bytesRead, err := f.Read(buffer)
-	if err != nil {
+	if _, err := io.ReadFull(f, buffer); err != nil {
 		return nil, fmt.Errorf("get musicex error: %w", err)
-	}
-	if bytesRead != 16 {
-		return nil, fmt.Errorf("MusicExV1: read %d bytes (expected %d)", bytesRead, 16)
 	}
 
 	tag := &MusicExTagV1{
@@ -55,15 +52,18 @@ func NewMusicExTag(f io.ReadSeeker) (*MusicExTagV1, error) {
 	if tag.TagSize < 0xC0 {
 		return nil, fmt.Errorf("unsupported musicex tag size. expecting at least 0xC0, got 0x%02x", tag.TagSize)
 	}
+	// TagSize is attacker-controlled; reject anything larger than the file so the
+	// allocation below can't be driven to gigabytes by a crafted footer.
+	if int64(tag.TagSize) > fileSize {
+		return nil, fmt.Errorf("musicex tag size 0x%x exceeds file size %d", tag.TagSize, fileSize)
+	}
 
 	buffer = make([]byte, tag.TagSize)
-	f.Seek(-int64(tag.TagSize), io.SeekEnd)
-	bytesRead, err = f.Read(buffer)
-	if err != nil {
-		return nil, fmt.Errorf("MusicExV1: Read error %w", err)
+	if _, err := f.Seek(-int64(tag.TagSize), io.SeekEnd); err != nil {
+		return nil, fmt.Errorf("musicex seek to tag: %w", err)
 	}
-	if uint32(bytesRead) != tag.TagSize {
-		return nil, fmt.Errorf("MusicExV1: read %d bytes (expected %d)", bytesRead, tag.TagSize)
+	if _, err := io.ReadFull(f, buffer); err != nil {
+		return nil, fmt.Errorf("MusicExV1: read error %w", err)
 	}
 
 	tag.SongID = binary.LittleEndian.Uint32(buffer[0x00:0x04])

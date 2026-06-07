@@ -51,7 +51,8 @@ func (d *Decoder) getMetaBySongID(ctx context.Context) error {
 
 	d.meta = trackInfo
 	d.albumID = trackInfo.Album.Id
-	if trackInfo.Album.Pmid == "" {
+	// Prefer the picture media id (pmid) for the cover lookup, falling back to mid.
+	if trackInfo.Album.Pmid != "" {
 		d.albumMediaID = trackInfo.Album.Pmid
 	} else {
 		d.albumMediaID = trackInfo.Album.Mid
@@ -81,7 +82,8 @@ func (d *Decoder) searchMetaOnline(ctx context.Context, original common.AudioMet
 	meta := trackList[0]
 	d.meta = meta
 	d.albumID = meta.Album.Id
-	if meta.Album.Pmid == "" {
+	// Prefer the picture media id (pmid) for the cover lookup, falling back to mid.
+	if meta.Album.Pmid != "" {
 		d.albumMediaID = meta.Album.Pmid
 	} else {
 		d.albumMediaID = meta.Album.Mid

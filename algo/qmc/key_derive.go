@@ -106,6 +106,9 @@ func decryptTencentTea(inBuf []byte, key []byte) ([]byte, error) {
 	blk.Decrypt(destBuf, inBuf)
 	padLen := int(destBuf[0] & 0x7)
 	outLen := len(inBuf) - 1 - padLen - saltLen - zeroLen
+	if outLen < 0 {
+		return nil, errors.New("tea: invalid pad length yields negative output size")
+	}
 
 	out := make([]byte, outLen)
 

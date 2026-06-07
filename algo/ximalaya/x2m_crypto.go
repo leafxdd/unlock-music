@@ -26,9 +26,14 @@ func init() {
 // make sure input src is 1024(x2mHeaderSize) bytes long.
 func decryptX2MHeader(src []byte) []byte {
 	dst := make([]byte, len(src))
-	for dstIdx := range src {
-		srcIdx := x2mScrambleTable[dstIdx]
-		dst[dstIdx] = src[srcIdx] ^ x2mKey[dstIdx%len(x2mKey)]
+	// The scramble table is sized for a full header; bound both indices so a
+	// short or oversized buffer can't cause an out-of-range access.
+	n := min(len(src), x2mHeaderSize)
+	for dstIdx := range n {
+		srcIdx := int(x2mScrambleTable[dstIdx])
+		if srcIdx < len(src) {
+			dst[dstIdx] = src[srcIdx] ^ x2mKey[dstIdx%len(x2mKey)]
+		}
 	}
 	return dst
 }

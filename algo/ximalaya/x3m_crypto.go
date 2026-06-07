@@ -32,9 +32,14 @@ func init() {
 // make sure input src is 1024 (x3mHeaderSize) bytes long.
 func decryptX3MHeader(src []byte) []byte {
 	dst := make([]byte, len(src))
-	for dstIdx := range src {
-		srcIdx := x3mScrambleTable[dstIdx]
-		dst[dstIdx] = src[srcIdx] ^ x3mKey[dstIdx%len(x3mKey)]
+	// The scramble table is sized for a full header; bound both indices so a
+	// short or oversized buffer can't cause an out-of-range access.
+	n := min(len(src), x3mHeaderSize)
+	for dstIdx := range n {
+		srcIdx := int(x3mScrambleTable[dstIdx])
+		if srcIdx < len(src) {
+			dst[dstIdx] = src[srcIdx] ^ x3mKey[dstIdx%len(x3mKey)]
+		}
 	}
 	return dst
 }

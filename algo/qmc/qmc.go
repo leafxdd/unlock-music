@@ -98,6 +98,9 @@ func (d *Decoder) Validate() error {
 	if _, err := d.raw.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
+	if d.audioLen < 0 {
+		return fmt.Errorf("qmc: invalid audio length %d (corrupt footer?)", d.audioLen)
+	}
 	d.audio = io.LimitReader(d.raw, int64(d.audioLen))
 
 	// prepare for sniffing metadata

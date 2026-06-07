@@ -43,47 +43,57 @@ func (h *header) FromFile(rd io.ReadSeeker) error {
 
 func (h *header) FromBytes(r io.ReadSeeker) error {
 	h.MagicHeader = make([]byte, 16)
-	_, err := r.Read(h.MagicHeader)
-	if err != nil {
+	if _, err := io.ReadFull(r, h.MagicHeader); err != nil {
 		return err
 	}
 	if !bytes.Equal(kgmHeader, h.MagicHeader) && !bytes.Equal(vprHeader, h.MagicHeader) {
 		return ErrKgmMagicHeader
 	}
 
-	err = binary.Read(r, binary.LittleEndian, &h.AudioOffset)
-	if err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &h.AudioOffset); err != nil {
 		return err
 	}
-	err = binary.Read(r, binary.LittleEndian, &h.CryptoVersion)
-	if err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &h.CryptoVersion); err != nil {
 		return err
 	}
-	err = binary.Read(r, binary.LittleEndian, &h.CryptoSlot)
-	if err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &h.CryptoSlot); err != nil {
 		return err
 	}
 	h.CryptoTestData = make([]byte, 0x10)
-	_, err = r.Read(h.CryptoTestData)
-	if err != nil {
+	if _, err := io.ReadFull(r, h.CryptoTestData); err != nil {
 		return err
 	}
 	h.CryptoKey = make([]byte, 0x10)
-	_, err = r.Read(h.CryptoKey)
-	if err != nil {
+	if _, err := io.ReadFull(r, h.CryptoKey); err != nil {
 		return err
 	}
 
 	if h.CryptoVersion == 5 {
-		r.Seek(0x08, io.SeekCurrent)
+		if _, err := r.Seek(0x08, io.SeekCurrent); err != nil {
+			return err
+		}
 		var audioHashLen uint32 = 0
-		err = binary.Read(r, binary.LittleEndian, &audioHashLen)
+		if err := binary.Read(r, binary.LittleEndian, &audioHashLen); err != nil {
+			return err
+		}
+		// audioHashLen is attacker-controlled; bound it by the bytes remaining so a
+		// crafted length can't trigger a huge allocation.
+		cur, err := r.Seek(0, io.SeekCurrent)
 		if err != nil {
 			return err
 		}
-		audioHashBuffer := make([]byte, audioHashLen)
-		_, err = r.Read(audioHashBuffer)
+		end, err := r.Seek(0, io.SeekEnd)
 		if err != nil {
+			return err
+		}
+		if _, err := r.Seek(cur, io.SeekStart); err != nil {
+			return err
+		}
+		if int64(audioHashLen) > end-cur {
+			return fmt.Errorf("kgm audio hash length %d exceeds remaining file size %d", audioHashLen, end-cur)
+		}
+		audioHashBuffer := make([]byte, audioHashLen)
+		if _, err := io.ReadFull(r, audioHashBuffer); err != nil {
 			return err
 		}
 		h.AudioHash = string(audioHashBuffer)
