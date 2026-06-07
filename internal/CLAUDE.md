@@ -12,7 +12,6 @@ graph LR
     PROC --> SNIFF["sniff/<br/>Format Detection"]
     PROC --> UTIL["utils/<br/>AES / Temp / NFC"]
     FF --- MMKV["mmkv/<br/>Key Extraction"]
-    FF --- LOG["logging/<br/>Zap Logger"]
 ```
 
 ## processor/ -- Shared Processing Pipeline (NEW)
@@ -103,15 +102,9 @@ Used by QMC decoder to load encryption keys from QQ Music's local storage.
 
 | File | Purpose |
 |------|---------|
-| `crypto.go` | `AES128ECBDecrypt(key, data)` -- AES-128-ECB decryption with PKCS7 unpadding |
-| `temp.go` | `WriteTempFile(reader, ext)` -- write reader to temp file, return path |
+| `crypto.go` | `DecryptAES128ECB` / `PKCS7UnPadding` -- AES-128-ECB with validated PKCS7 unpadding (both return errors on bad input) |
+| `temp.go` | `WriteTempFile(reader, ext)` -- write reader to temp file, return path (cleans up on error) |
 | `unicode.go` | `NormalizeUnicode(s)` -- Unicode NFC normalization for filename matching |
-
-## logging/ -- Logger Factory
-
-| File | Purpose |
-|------|---------|
-| `zap.go` | Logger setup utility (currently unused; both CLI and GUI build their own loggers) |
 
 ## Changelog
 

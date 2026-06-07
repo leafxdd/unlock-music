@@ -86,7 +86,7 @@ func (d *Decoder) Validate() error {
 
 func (d *Decoder) validateMagicHeader() error {
 	header := make([]byte, len(magicHeader)) // 0x00 - 0x07
-	if _, err := d.rd.Read(header); err != nil {
+	if _, err := io.ReadFull(d.rd, header); err != nil {
 		return fmt.Errorf("ncm read magic header: %w", err)
 	}
 
@@ -276,6 +276,9 @@ func (d *Decoder) GetCoverImage(ctx context.Context) ([]byte, error) {
 
 	// fetch cover image
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imgURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("ncm build image request: %w", err)
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("ncm download image failed: %w", err)

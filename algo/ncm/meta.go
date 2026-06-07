@@ -49,19 +49,13 @@ func (m *ncmMetaMusic) GetArtists() []string {
 	var artists []string
 	switch v := m.Artist.(type) {
 
-	// Case 1: Handles the format [['artistA'], ['artistB']]
-	case [][]string:
-		for _, artistSlice := range v {
-			artists = append(artists, artistSlice...)
-		}
-
-	// Case 2: Handles the simple format "artistA"
+	// Simple format: "artistA"
 	// Ref: https://git.unlock-music.dev/um/cli/issues/78
 	case string:
 		artists = []string{v}
 
-	// Case 3: Handles the mixed-type format [['artistA', 12345], ['artistB', 67890]]
-	// This is the key fix for correctly parsing artist info from certain files.
+	// Nested / mixed-type format, e.g. [["artistA", 12345], ["artistB", 67890]].
+	// JSON unmarshalled into an `any` produces []any of []any, never [][]string.
 	case []any:
 		for _, item := range v {
 			if innerSlice, ok := item.([]any); ok {

@@ -58,7 +58,6 @@ graph TD
     INTERNAL --> SNIFF2["sniff/"]
     INTERNAL --> MMKV["mmkv/"]
     INTERNAL --> UTILS2["utils/"]
-    INTERNAL --> LOGGING["logging/"]
 
     click ALGO "./algo/CLAUDE.md" "Decryption algorithms"
     click INTERNAL "./internal/CLAUDE.md" "Internal packages"
@@ -79,7 +78,6 @@ graph TD
 | Sniff | `internal/sniff/` | Go | Audio/image format detection by magic bytes |
 | MMKV | `internal/mmkv/` | Go | MMKV binary format parser for QQ Music keys |
 | Utils | `internal/utils/` | Go | AES-128-ECB, temp files, Unicode NFC normalization |
-| Logging | `internal/logging/` | Go | Zap logger factory |
 | Algo Common | `algo/common/` | Go | Decoder registry, interfaces, file extension dispatch |
 | QMC | `algo/qmc/` | Go | QQ Music: RC4, Map cipher, Static XOR, key derivation |
 | KGM | `algo/kgm/` | Go | Kugou: v3 XOR, v5 Windows SQLite |

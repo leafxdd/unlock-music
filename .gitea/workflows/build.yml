@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout codebase
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -46,11 +46,14 @@ jobs:
       - name: Setup vars
         id: vars
         run: |
-          echo "::set-output name=short_sha::$(git rev-parse --short HEAD)"
-          echo "::set-output name=git_tag::$(git describe --tags --always)"
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "git_tag=$(git describe --tags --always)" >> "$GITHUB_OUTPUT"
+
+      - name: Vet
+        run: go vet ./algo/... ./internal/... ./cmd/um/...
 
       - name: Test
-        run: go test -v ./...
+        run: go test -v ./algo/... ./internal/... ./cmd/um/...
 
       - name: Build
         env:
@@ -70,13 +73,13 @@ jobs:
     needs: build
     steps:
       - name: Checkout codebase
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Setup vars
         id: vars
         run: |
-          echo "::set-output name=git_tag::$(git describe --tags --always)"
+          echo "git_tag=$(git describe --tags --always)" >> "$GITHUB_OUTPUT"
       - name: prepare archive
         run: |
           mkdir -p dist prepare
