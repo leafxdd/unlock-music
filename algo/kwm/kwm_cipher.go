@@ -18,7 +18,7 @@ func generateMask(key []byte) []byte {
 	keyStr := strconv.FormatUint(keyInt, 10)
 	keyStrTrim := padOrTruncate(keyStr, 32)
 	mask := make([]byte, 32)
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		mask[i] = keyPreDefined[i] ^ keyStrTrim[i]
 	}
 	return mask

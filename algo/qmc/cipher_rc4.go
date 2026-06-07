@@ -23,12 +23,12 @@ func newRC4Cipher(key []byte) (*rc4Cipher, error) {
 	var c = rc4Cipher{key: key, n: n}
 	c.box = make([]byte, n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		c.box[i] = byte(i)
 	}
 
 	var j = 0
-	for i := 0; i < n; i++ {
+	for i := range n {
 		j = (j + int(c.box[i]) + int(key[i%n])) % n
 		c.box[i], c.box[j] = c.box[j], c.box[i]
 	}
@@ -67,10 +67,7 @@ func (c *rc4Cipher) Decrypt(src []byte, offset int) {
 	}
 
 	if offset < rc4FirstSegmentSize {
-		blockSize := toProcess
-		if blockSize > rc4FirstSegmentSize-offset {
-			blockSize = rc4FirstSegmentSize - offset
-		}
+		blockSize := min(toProcess, rc4FirstSegmentSize-offset)
 		c.encFirstSegment(src[:blockSize], offset)
 		if markProcess(blockSize) {
 			return
@@ -78,10 +75,7 @@ func (c *rc4Cipher) Decrypt(src []byte, offset int) {
 	}
 
 	if offset%rc4SegmentSize != 0 {
-		blockSize := toProcess
-		if blockSize > rc4SegmentSize-offset%rc4SegmentSize {
-			blockSize = rc4SegmentSize - offset%rc4SegmentSize
-		}
+		blockSize := min(toProcess, rc4SegmentSize-offset%rc4SegmentSize)
 		c.encASegment(src[processed:processed+blockSize], offset)
 		if markProcess(blockSize) {
 			return
@@ -97,7 +91,7 @@ func (c *rc4Cipher) Decrypt(src []byte, offset int) {
 	}
 }
 func (c *rc4Cipher) encFirstSegment(buf []byte, offset int) {
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		buf[i] ^= c.key[c.getSegmentSkip(offset+i)]
 	}
 }

@@ -32,7 +32,7 @@ func newKgmCryptoV3(header *header) (common.StreamDecoder, error) {
 }
 
 func (d *kgmCryptoV3) Decrypt(b []byte, offset int) {
-	for i := 0; i < len(b); i++ {
+	for i := range b {
 		b[i] ^= d.fileBox[(offset+i)%len(d.fileBox)]
 		b[i] ^= b[i] << 4
 		b[i] ^= d.slotBox[(offset+i)%len(d.slotBox)]

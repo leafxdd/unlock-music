@@ -92,30 +92,30 @@ type TrackInfo struct {
 	Status     int    `json:"status"`
 	Fnote      int    `json:"fnote"`
 	File       struct {
-		MediaMid      string        `json:"media_mid"`
-		Size24Aac     int           `json:"size_24aac"`
-		Size48Aac     int           `json:"size_48aac"`
-		Size96Aac     int           `json:"size_96aac"`
-		Size192Ogg    int           `json:"size_192ogg"`
-		Size192Aac    int           `json:"size_192aac"`
-		Size128Mp3    int           `json:"size_128mp3"`
-		Size320Mp3    int           `json:"size_320mp3"`
-		SizeApe       int           `json:"size_ape"`
-		SizeFlac      int           `json:"size_flac"`
-		SizeDts       int           `json:"size_dts"`
-		SizeTry       int           `json:"size_try"`
-		TryBegin      int           `json:"try_begin"`
-		TryEnd        int           `json:"try_end"`
-		Url           string        `json:"url"`
-		SizeHires     int           `json:"size_hires"`
-		HiresSample   int           `json:"hires_sample"`
-		HiresBitdepth int           `json:"hires_bitdepth"`
-		B30S          int           `json:"b_30s"`
-		E30S          int           `json:"e_30s"`
-		Size96Ogg     int           `json:"size_96ogg"`
-		Size360Ra     []interface{} `json:"size_360ra"`
-		SizeDolby     int           `json:"size_dolby"`
-		SizeNew       []interface{} `json:"size_new"`
+		MediaMid      string `json:"media_mid"`
+		Size24Aac     int    `json:"size_24aac"`
+		Size48Aac     int    `json:"size_48aac"`
+		Size96Aac     int    `json:"size_96aac"`
+		Size192Ogg    int    `json:"size_192ogg"`
+		Size192Aac    int    `json:"size_192aac"`
+		Size128Mp3    int    `json:"size_128mp3"`
+		Size320Mp3    int    `json:"size_320mp3"`
+		SizeApe       int    `json:"size_ape"`
+		SizeFlac      int    `json:"size_flac"`
+		SizeDts       int    `json:"size_dts"`
+		SizeTry       int    `json:"size_try"`
+		TryBegin      int    `json:"try_begin"`
+		TryEnd        int    `json:"try_end"`
+		Url           string `json:"url"`
+		SizeHires     int    `json:"size_hires"`
+		HiresSample   int    `json:"hires_sample"`
+		HiresBitdepth int    `json:"hires_bitdepth"`
+		B30S          int    `json:"b_30s"`
+		E30S          int    `json:"e_30s"`
+		Size96Ogg     int    `json:"size_96ogg"`
+		Size360Ra     []any  `json:"size_360ra"`
+		SizeDolby     int    `json:"size_dolby"`
+		SizeNew       []any  `json:"size_new"`
 	} `json:"file"`
 	Pay struct {
 		PayMonth   int `json:"pay_month"`

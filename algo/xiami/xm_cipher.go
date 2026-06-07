@@ -13,7 +13,7 @@ func newXmCipher(mask byte, encryptStartAt int) *xmCipher {
 }
 
 func (c *xmCipher) Decrypt(buf []byte, offset int) {
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		if offset+i >= c.encryptStartAt {
 			buf[i] ^= c.mask
 		}

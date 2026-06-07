@@ -33,7 +33,7 @@ func (c *mapCipher) rotate(value byte, bits byte) byte {
 }
 
 func (c *mapCipher) Decrypt(buf []byte, offset int) {
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		buf[i] ^= c.getMask(offset + i)
 	}
 }

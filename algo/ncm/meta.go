@@ -21,17 +21,17 @@ type ncmMeta interface {
 type ncmMetaMusic struct {
 	logger *zap.Logger
 
-	Format        string        `json:"format"`
-	MusicName     string        `json:"musicName"`
-	Artist        interface{}   `json:"artist"`
-	Album         string        `json:"album"`
-	AlbumPicDocID interface{}   `json:"albumPicDocId"`
-	AlbumPic      string        `json:"albumPic"`
-	Flag          int           `json:"flag"`
-	Bitrate       int           `json:"bitrate"`
-	Duration      int           `json:"duration"`
-	Alias         []interface{} `json:"alias"`
-	TransNames    []interface{} `json:"transNames"`
+	Format        string `json:"format"`
+	MusicName     string `json:"musicName"`
+	Artist        any    `json:"artist"`
+	Album         string `json:"album"`
+	AlbumPicDocID any    `json:"albumPicDocId"`
+	AlbumPic      string `json:"albumPic"`
+	Flag          int    `json:"flag"`
+	Bitrate       int    `json:"bitrate"`
+	Duration      int    `json:"duration"`
+	Alias         []any  `json:"alias"`
+	TransNames    []any  `json:"transNames"`
 }
 
 func newNcmMetaMusic(logger *zap.Logger) *ncmMetaMusic {
@@ -62,9 +62,9 @@ func (m *ncmMetaMusic) GetArtists() []string {
 
 	// Case 3: Handles the mixed-type format [['artistA', 12345], ['artistB', 67890]]
 	// This is the key fix for correctly parsing artist info from certain files.
-	case []interface{}:
+	case []any:
 		for _, item := range v {
-			if innerSlice, ok := item.([]interface{}); ok {
+			if innerSlice, ok := item.([]any); ok {
 				if len(innerSlice) > 0 {
 					// Assume the first element is the artist's name.
 					if artistName, ok := innerSlice[0].(string); ok {

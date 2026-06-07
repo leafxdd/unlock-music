@@ -12,7 +12,7 @@ import (
 
 func simpleMakeKey(salt byte, length int) []byte {
 	keyBuf := make([]byte, length)
-	for i := 0; i < length; i++ {
+	for i := range length {
 		tmp := math.Tan(float64(salt) + float64(i)*0.1)
 		keyBuf[i] = byte(math.Abs(tmp) * 100.0)
 	}
@@ -29,8 +29,8 @@ func deriveKey(rawKey []byte) ([]byte, error) {
 	}
 	rawKeyDec = rawKeyDec[:n]
 
-	if bytes.HasPrefix(rawKeyDec, []byte(rawKeyPrefixV2)) {
-		rawKeyDec, err = deriveKeyV2(bytes.TrimPrefix(rawKeyDec, []byte(rawKeyPrefixV2)))
+	if after, ok := bytes.CutPrefix(rawKeyDec, []byte(rawKeyPrefixV2)); ok {
+		rawKeyDec, err = deriveKeyV2(after)
 		if err != nil {
 			return nil, fmt.Errorf("deriveKeyV2 failed: %w", err)
 		}
@@ -45,7 +45,7 @@ func deriveKeyV1(rawKeyDec []byte) ([]byte, error) {
 
 	simpleKey := simpleMakeKey(106, 8)
 	teaKey := make([]byte, 16)
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		teaKey[i<<1] = simpleKey[i]
 		teaKey[i<<1+1] = rawKeyDec[i]
 	}
@@ -155,7 +155,7 @@ func decryptTencentTea(inBuf []byte, key []byte) ([]byte, error) {
 }
 
 func xor8Bytes(dst, a, b []byte) {
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		dst[i] = a[i] ^ b[i]
 	}
 }

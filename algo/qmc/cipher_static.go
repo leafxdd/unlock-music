@@ -9,7 +9,7 @@ var defaultStaticCipher = staticCipher{}
 type staticCipher struct{}
 
 func (c *staticCipher) Decrypt(buf []byte, offset int) {
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		buf[i] ^= c.getMask(offset + i)
 	}
 }

@@ -41,7 +41,7 @@ func main() {
 		Windows: &windows.Options{
 			WebviewGpuIsDisabled: true,
 		},
-		Bind: []interface{}{
+		Bind: []any{
 			app,
 		},
 	})

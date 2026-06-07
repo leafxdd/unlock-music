@@ -108,7 +108,7 @@ func (d *Decoder) readKeyData() ([]byte, error) {
 	if _, err := io.ReadFull(d.rd, bKeyRaw); err != nil {
 		return nil, fmt.Errorf("ncm read key data: %w", err)
 	}
-	for i := uint32(0); i < iKeyLen; i++ {
+	for i := range iKeyLen {
 		bKeyRaw[i] ^= 0x64
 	}
 
@@ -140,13 +140,13 @@ func (d *Decoder) readMetaData() error {
 		return errors.New("decode ncm meta failed: " + err.Error())
 	}
 	metaRaw := utils.PKCS7UnPadding(utils.DecryptAES128ECB(cipherText, keyMeta))
-	sep := bytes.IndexByte(metaRaw, ':')
-	if sep == -1 {
+	before, after, ok := bytes.Cut(metaRaw, []byte{':'})
+	if !ok {
 		return errors.New("invalid ncm meta file")
 	}
 
-	d.metaType = string(metaRaw[:sep])
-	d.metaRaw = metaRaw[sep+1:]
+	d.metaType = string(before)
+	d.metaRaw = after
 
 	return nil
 }

@@ -13,26 +13,26 @@ func newNcmCipher(key []byte) *ncmCipher {
 }
 
 func (c *ncmCipher) Decrypt(buf []byte, offset int) {
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		buf[i] ^= c.box[(i+offset)&0xff]
 	}
 }
 
 func buildKeyBox(key []byte) []byte {
 	box := make([]byte, 256)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		box[i] = byte(i)
 	}
 
 	var j byte
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		j = box[i] + j + key[i%len(key)]
 		box[i], box[j] = box[j], box[i]
 	}
 
 	ret := make([]byte, 256)
 	var _i byte
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		_i = byte(i + 1)
 		si := box[_i]
 		sj := box[_i+si]
