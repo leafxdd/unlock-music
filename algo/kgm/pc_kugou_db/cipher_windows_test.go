@@ -20,3 +20,23 @@ func TestDerivePageAESIv_Page0(t *testing.T) {
 		t.Errorf("Derived AES iv for page 0 does not match expected value: got %v, want %v", pageKey, expectedIv)
 	}
 }
+
+// TestDecryptDatabaseRejectsTinyBuffer covers the buffers shorter than the
+// SQLite header, which previously panicked on the buffer[:16] slice.
+func TestDecryptDatabaseRejectsTinyBuffer(t *testing.T) {
+	for _, size := range []int{0, 1, 8, 15} {
+		if err := decryptDatabase(make([]byte, size)); err == nil {
+			t.Errorf("decryptDatabase(%d bytes) = nil, want error", size)
+		}
+	}
+}
+
+// TestDecryptDatabasePlainSQLitePassthrough confirms a buffer that already
+// carries the SQLite header is treated as an unencrypted database.
+func TestDecryptDatabasePlainSQLitePassthrough(t *testing.T) {
+	buf := make([]byte, PAGE_SIZE)
+	copy(buf, SQLITE_HEADER)
+	if err := decryptDatabase(buf); err != nil {
+		t.Errorf("decryptDatabase(plain sqlite) = %v, want nil", err)
+	}
+}

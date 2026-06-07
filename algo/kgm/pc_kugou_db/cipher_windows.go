@@ -129,6 +129,10 @@ func validateFirstPageHeader(header []byte) error {
 func decryptDatabase(buffer []byte) error {
 	dbSize := len(buffer)
 
+	if dbSize < len(SQLITE_HEADER) {
+		return fmt.Errorf("invalid database size: %d", dbSize)
+	}
+
 	// not encrypted
 	if bytes.Equal(buffer[:len(SQLITE_HEADER)], SQLITE_HEADER) {
 		return nil
@@ -188,6 +192,7 @@ func extractKeyMapping(buffer []byte) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close()
 
 	rows, err := conn.QueryContext(context.Background(), `
 		select EncryptionKeyId, EncryptionKey from ShareFileItems
@@ -201,38 +206,43 @@ func extractKeyMapping(buffer []byte) (map[string]string, error) {
 	for rows.Next() {
 		var keyId, key string
 		if err := rows.Scan(&keyId, &key); err != nil {
-			continue
+			return nil, fmt.Errorf("scan ekey row: %w", err)
 		}
 		m[keyId] = key
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate ekey rows: %w", err)
+	}
 
-	return m, err
+	return m, nil
 }
 
 var kugouPcDatabaseDumpLock = &sync.Mutex{}
 var kugouPcDatabaseDump = make(map[string]map[string]string)
 
 func CachedDumpEKey(dbPath string) (map[string]string, error) {
-	dump, exist := kugouPcDatabaseDump[dbPath]
-	if !exist {
-		kugouPcDatabaseDumpLock.Lock()
-		defer kugouPcDatabaseDumpLock.Unlock()
+	// Hold the lock for the whole read-or-populate sequence. The previous
+	// double-checked version read the map outside the mutex, which races with
+	// the write below ("concurrent map read and map write") if two decodes run
+	// at once.
+	kugouPcDatabaseDumpLock.Lock()
+	defer kugouPcDatabaseDumpLock.Unlock()
 
-		if dump, exist = kugouPcDatabaseDump[dbPath]; !exist {
-			buffer, err := os.ReadFile(dbPath)
-			if err != nil {
-				return nil, err
-			}
-			if err = decryptDatabase(buffer); err != nil {
-				return nil, err
-			}
-			dump, err = extractKeyMapping(buffer)
-			if err != nil {
-				return nil, err
-			}
-			kugouPcDatabaseDump[dbPath] = dump
-		}
+	if dump, exist := kugouPcDatabaseDump[dbPath]; exist {
+		return dump, nil
 	}
 
+	buffer, err := os.ReadFile(dbPath)
+	if err != nil {
+		return nil, err
+	}
+	if err = decryptDatabase(buffer); err != nil {
+		return nil, err
+	}
+	dump, err := extractKeyMapping(buffer)
+	if err != nil {
+		return nil, err
+	}
+	kugouPcDatabaseDump[dbPath] = dump
 	return dump, nil
 }
