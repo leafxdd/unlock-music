@@ -20,7 +20,7 @@ Original: Web Edition https://git.um-react.app/um/web
 
 ## Install from source
 
-- Requirements: **Golang 1.23.3**
+- Requirements: **Golang 1.26**
 
 1. run `go install git.um-react.app/um/cli/cmd/um@main`
 

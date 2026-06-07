@@ -1,6 +1,6 @@
 # Unlock Music — AI Context
 
-> Updated: 2026-06-07 | Module: `git.um-react.app/um/cli` | Go 1.25.1 + Vue 3
+> Updated: 2026-06-07 | Module: `git.um-react.app/um/cli` | Go 1.26.0 + Vue 3
 
 ## What Is This
 
