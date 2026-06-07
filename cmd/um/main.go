@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 
@@ -83,7 +83,7 @@ func printSupportedExtensions() {
 	for ext := range extSet {
 		exts = append(exts, ext)
 	}
-	sort.Strings(exts)
+	slices.Sort(exts)
 	for _, ext := range exts {
 		fmt.Printf("%s: %d\n", ext, extSet[ext])
 	}
@@ -176,7 +176,9 @@ func appMain(c *cli.Context) (err error) {
 	}
 
 	kggDbPath := c.String("kgg-db")
-	if kggDbPath == "" {
+	if kggDbPath == "" && runtime.GOOS == "windows" {
+		// KGG (KGMv5) decoding reads keys from the Kugou SQLite DB, which only
+		// exists on Windows; the default path is meaningless elsewhere.
 		kggDbPath = filepath.Join(os.Getenv("APPDATA"), "Kugou8", "KGMusicV3.db")
 	}
 
@@ -193,13 +195,14 @@ func appMain(c *cli.Context) (err error) {
 		},
 	}, logger, processor.Hooks{})
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
 	if inputStat.IsDir() {
 		if c.Bool("watch") {
-			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-			defer stop()
 			return proc.WatchDir(ctx, input)
 		}
-		return proc.ProcessDir(context.Background(), input)
+		return proc.ProcessDir(ctx, input)
 	}
-	return proc.ProcessFile(context.Background(), input)
+	return proc.ProcessFile(ctx, input)
 }

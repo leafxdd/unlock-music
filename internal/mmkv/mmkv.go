@@ -33,8 +33,14 @@ func LoadFromPath(path string, key string, logger *zap.Logger) (result common.QM
 
 	cr, err := os.Open(mmkv_crc)
 	if err != nil {
-		// crc is optional
-		logger.Warn("LoadMMKV: Failed to open crc file, assuming no encryption", zap.Error(err))
+		// The .crc file carries the MMKV encryption metadata; without it the store
+		// can only be read as unencrypted. Make it explicit when a supplied key is
+		// being ignored as a result.
+		if key != "" {
+			logger.Warn("LoadMMKV: crc file missing, ignoring provided key and assuming no encryption", zap.Error(err))
+		} else {
+			logger.Warn("LoadMMKV: crc file missing, assuming no encryption", zap.Error(err))
+		}
 		key = ""
 	} else {
 		defer cr.Close()
@@ -42,6 +48,10 @@ func LoadFromPath(path string, key string, logger *zap.Logger) (result common.QM
 
 	var password []byte = nil
 	if key != "" {
+		if len(key) != 16 {
+			logger.Warn("LoadMMKV: encryption key is not 16 bytes; it will be zero-padded or truncated, which may cause decryption to fail",
+				zap.Int("keyLength", len(key)))
+		}
 		password = make([]byte, 16)
 		copy(password, []byte(key))
 	}
@@ -52,7 +62,15 @@ func LoadFromPath(path string, key string, logger *zap.Logger) (result common.QM
 	}
 
 	result = make(common.QMCKeys)
-	for !mmkv.IsEOF() {
+	// maxEntries is a backstop against a malformed store that never reaches EOF
+	// while ReadKey/ReadStringValue keep returning without error. Far above any
+	// realistic QQ Music key store.
+	const maxEntries = 1 << 20
+	for count := 0; !mmkv.IsEOF(); count++ {
+		if count >= maxEntries {
+			logger.Warn("LoadMMKV: aborting after too many entries; file may be malformed", zap.Int("limit", maxEntries))
+			break
+		}
 		key, err := mmkv.ReadKey()
 		if err != nil {
 			logger.Error("LoadMMKV: read key error", zap.Error(err))

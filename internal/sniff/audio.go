@@ -82,8 +82,8 @@ type mpeg4FtpyBox struct {
 }
 
 func readMpeg4FtypBox(header []byte) *mpeg4FtpyBox {
-	if (len(header) < 8) || !bytes.Equal([]byte("ftyp"), header[4:8]) {
-		return nil // not a valid ftyp box
+	if (len(header) < 16) || !bytes.Equal([]byte("ftyp"), header[4:8]) {
+		return nil // not a valid ftyp box (need at least size+ftyp+majorBrand+minorVersion)
 	}
 
 	size := binary.BigEndian.Uint32(header[0:4]) // size
@@ -97,7 +97,7 @@ func readMpeg4FtypBox(header []byte) *mpeg4FtpyBox {
 	}
 
 	// compatible brands
-	for i := 16; i < int(size) && i+4 < len(header); i += 4 {
+	for i := 16; i < int(size) && i+4 <= len(header); i += 4 {
 		box.compatibleBrands = append(box.compatibleBrands, string(header[i:i+4]))
 	}
 
