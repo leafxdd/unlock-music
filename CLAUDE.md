@@ -150,14 +150,18 @@ npm install --prefix cmd/gui/frontend  # Install frontend deps
 
 ## Testing Strategy
 
-- Go unit tests in `algo/` packages (cipher correctness with binary fixtures in `testdata/`)
-- 8 test files:
-  - `algo/common/meta_test.go` (filename metadata parsing), `algo/common/dispatch_test.go` (decoder registry + `QMCKeys.Get`)
-  - `algo/qmc/cipher_map_test.go`, `algo/qmc/cipher_rc4_test.go`, `algo/qmc/key_derive_test.go`, `algo/qmc/qmc_test.go`
-  - `algo/kgm/pc_kugou_db/cipher_windows_test.go` (Windows-only, `//go:build windows`)
-  - `internal/processor/processor_test.go` (progressReader throttling, hooks defaults, `FileStatus` constants)
-- No frontend tests currently (Vue components untested)
-- Processor has package-level unit tests (progressReader / hooks / status), but no full-pipeline `ProcessFile` integration test
+- Go unit tests in `algo/` packages (cipher correctness with binary fixtures in `testdata/`) plus malformed/crafted-input regression tests across the pipeline.
+- 19 test files:
+  - `algo/common/meta_test.go`, `algo/common/dispatch_test.go`
+  - `algo/qmc/cipher_map_test.go`, `cipher_rc4_test.go`, `key_derive_test.go`, `qmc_test.go`, `qmc_footer_musicex_test.go` (crafted musicex footer)
+  - `algo/kgm/kgm_header_test.go` (crafted v5 header), `algo/kgm/pc_kugou_db/cipher_windows_test.go` (Windows-only, `//go:build windows`)
+  - `algo/kwm/kwm_test.go` (bitrate/type parsing, padOrTruncate), `algo/ncm/ncm_test.go` (crafted `.ncm` Validate)
+  - `internal/processor/processor_test.go` (progressReader, hooks, status, panic recovery via a stub decoder)
+  - `internal/utils/crypto_test.go` (PKCS7/AES bad input), `temp_test.go`
+  - `internal/sniff/sniff_test.go` (short header, jpeg/webp), `internal/ffmpeg/options_test.go` (arg builder), `meta_flac_test.go` (tag-preservation + single-cover round-trip)
+  - `cmd/gui/app_test.go` (drop resolution), `cmd/gui/logsink_test.go` (log tee)
+- No frontend tests currently (Vue components untested).
+- Crafted-input tests assert decoders return errors rather than panicking; the processor wraps each file in `recover()` as a final backstop.
 
 ## Coding Conventions
 
@@ -182,6 +186,7 @@ Gitea Actions (`.gitea/workflows/build.yml`): test -> cross-compile 6 CLI target
 
 | Date | Change |
 |------|--------|
+| 2026-06-07 | Migrated baseline to Go 1.26; hardened decoders against crafted files (recover() backstop, bounds/padding/key checks across crypto, ncm, qmc, kgm, kwm, ximalaya); fixed FLAC tag-loss + duplicate-cover; fixed KGG cache race; expanded tests 8 -> 19; removed dead `internal/logging`; scoped CI to non-GUI packages |
 | 2026-06-07 | Corrected Testing Strategy: 6 -> 8 test files (added `algo/common/dispatch_test.go`, `internal/processor/processor_test.go`); refined processor-test note |
 | 2026-05-04 | Updated root CLAUDE.md: added GUI module, processor package, frontend docs, module structure diagram, updated architecture |
 | 2026-04-21 | Initial CLAUDE.md generation (CLI-only) |
