@@ -97,28 +97,65 @@ func (d *Decoder) validateMagicHeader() error {
 	return nil
 }
 
+// readBounded reads exactly n bytes from the file, but first rejects a length
+// larger than the bytes remaining so a crafted length field cannot trigger a
+// huge allocation (these length prefixes are attacker-controlled uint32s).
+func (d *Decoder) readBounded(n uint32, what string) ([]byte, error) {
+	cur, err := d.rd.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return nil, fmt.Errorf("ncm locate %s: %w", what, err)
+	}
+	end, err := d.rd.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, fmt.Errorf("ncm size for %s: %w", what, err)
+	}
+	if _, err := d.rd.Seek(cur, io.SeekStart); err != nil {
+		return nil, fmt.Errorf("ncm seek back for %s: %w", what, err)
+	}
+	if int64(n) > end-cur {
+		return nil, fmt.Errorf("ncm %s length %d exceeds remaining file size %d", what, n, end-cur)
+	}
+	buf := make([]byte, n)
+	if _, err := io.ReadFull(d.rd, buf); err != nil {
+		return nil, fmt.Errorf("ncm read %s: %w", what, err)
+	}
+	return buf, nil
+}
+
 func (d *Decoder) readKeyData() ([]byte, error) {
-	bKeyLen := make([]byte, 4) //
+	bKeyLen := make([]byte, 4)
 	if _, err := io.ReadFull(d.rd, bKeyLen); err != nil {
 		return nil, fmt.Errorf("ncm read key length: %w", err)
 	}
 	iKeyLen := binary.LittleEndian.Uint32(bKeyLen)
 
-	bKeyRaw := make([]byte, iKeyLen)
-	if _, err := io.ReadFull(d.rd, bKeyRaw); err != nil {
-		return nil, fmt.Errorf("ncm read key data: %w", err)
+	bKeyRaw, err := d.readBounded(iKeyLen, "key data")
+	if err != nil {
+		return nil, err
 	}
-	for i := range iKeyLen {
+	for i := range bKeyRaw {
 		bKeyRaw[i] ^= 0x64
 	}
 
-	return utils.PKCS7UnPadding(utils.DecryptAES128ECB(bKeyRaw, keyCore))[17:], nil
+	decrypted, err := utils.DecryptAES128ECB(bKeyRaw, keyCore)
+	if err != nil {
+		return nil, fmt.Errorf("ncm decrypt key: %w", err)
+	}
+	keyData, err := utils.PKCS7UnPadding(decrypted)
+	if err != nil {
+		return nil, fmt.Errorf("ncm unpad key: %w", err)
+	}
+	// The first 17 bytes are a fixed "neteasecloudmusic" prefix; the key follows.
+	if len(keyData) <= 17 {
+		return nil, fmt.Errorf("ncm key data too short: %d bytes", len(keyData))
+	}
+	return keyData[17:], nil
 }
 
 func (d *Decoder) readMetaData() error {
-	bMetaLen := make([]byte, 4) //
+	bMetaLen := make([]byte, 4)
 	if _, err := io.ReadFull(d.rd, bMetaLen); err != nil {
-		return fmt.Errorf("ncm read key length: %w", err)
+		return fmt.Errorf("ncm read meta length: %w", err)
 	}
 	iMetaLen := binary.LittleEndian.Uint32(bMetaLen)
 
@@ -126,12 +163,17 @@ func (d *Decoder) readMetaData() error {
 		return nil // no meta data
 	}
 
-	bMetaRaw := make([]byte, iMetaLen)
-	if _, err := io.ReadFull(d.rd, bMetaRaw); err != nil {
-		return fmt.Errorf("ncm read meta data: %w", err)
+	bMetaRaw, err := d.readBounded(iMetaLen, "meta data")
+	if err != nil {
+		return err
 	}
-	bMetaRaw = bMetaRaw[22:] // skip "163 key(Don't modify):"
-	for i := 0; i < len(bMetaRaw); i++ {
+
+	const metaPrefixLen = 22 // len("163 key(Don't modify):")
+	if len(bMetaRaw) < metaPrefixLen {
+		return fmt.Errorf("ncm meta data too short: %d bytes", len(bMetaRaw))
+	}
+	bMetaRaw = bMetaRaw[metaPrefixLen:] // skip "163 key(Don't modify):"
+	for i := range bMetaRaw {
 		bMetaRaw[i] ^= 0x63
 	}
 
@@ -139,7 +181,14 @@ func (d *Decoder) readMetaData() error {
 	if err != nil {
 		return errors.New("decode ncm meta failed: " + err.Error())
 	}
-	metaRaw := utils.PKCS7UnPadding(utils.DecryptAES128ECB(cipherText, keyMeta))
+	decrypted, err := utils.DecryptAES128ECB(cipherText, keyMeta)
+	if err != nil {
+		return fmt.Errorf("ncm decrypt meta: %w", err)
+	}
+	metaRaw, err := utils.PKCS7UnPadding(decrypted)
+	if err != nil {
+		return fmt.Errorf("ncm unpad meta: %w", err)
+	}
 	before, after, ok := bytes.Cut(metaRaw, []byte{':'})
 	if !ok {
 		return errors.New("invalid ncm meta file")
@@ -169,9 +218,9 @@ func (d *Decoder) readCoverData() error {
 	}
 	iCoverLen := binary.LittleEndian.Uint32(bCoverLen)
 
-	coverBuf := make([]byte, iCoverLen)
-	if _, err := io.ReadFull(d.rd, coverBuf); err != nil {
-		return fmt.Errorf("ncm read cover data: %w", err)
+	coverBuf, err := d.readBounded(iCoverLen, "cover data")
+	if err != nil {
+		return err
 	}
 	d.cover = coverBuf
 
