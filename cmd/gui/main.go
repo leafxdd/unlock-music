@@ -34,7 +34,8 @@ func main() {
 			CSSDropProperty:    "--wails-drop-target",
 			CSSDropValue:       "drop",
 		},
-		OnStartup: app.Startup,
+		OnStartup:  app.Startup,
+		OnShutdown: app.shutdown,
 		// Disable WebView2 GPU acceleration to avoid a brief DWM hardware-cursor
 		// stall during GPU compositor init on startup. The UI is simple, so CPU
 		// rendering is fine.

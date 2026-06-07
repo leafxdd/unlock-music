@@ -48,6 +48,12 @@ func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
+// shutdown is the Wails OnShutdown hook; it removes any ffmpeg/ffprobe extracted
+// from the embedded payload so nothing is left on disk after the app closes.
+func (a *App) shutdown(_ context.Context) {
+	ffmpeg.Cleanup()
+}
+
 func (a *App) CheckFFmpeg() bool {
 	return ffmpeg.Available()
 }

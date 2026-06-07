@@ -21,6 +21,7 @@ import (
 	_ "git.um-react.app/um/cli/algo/tm"
 	_ "git.um-react.app/um/cli/algo/xiami"
 	_ "git.um-react.app/um/cli/algo/ximalaya"
+	"git.um-react.app/um/cli/internal/ffmpeg"
 	"git.um-react.app/um/cli/internal/processor"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
@@ -109,6 +110,9 @@ func setupLogger(verbose bool) *zap.Logger {
 
 func appMain(c *cli.Context) (err error) {
 	logger = setupLogger(c.Bool("verbose"))
+
+	// Remove any ffmpeg/ffprobe extracted from the embedded payload on the way out.
+	defer ffmpeg.Cleanup()
 
 	cwd, err := os.Getwd()
 	if err != nil {
