@@ -30,7 +30,7 @@ func ExtractAlbumArt(ctx context.Context, rd io.Reader) (*bytes.Buffer, error) {
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("ffmpeg run: %w", err)
+		return nil, fmt.Errorf("ffmpeg run: %w, stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
 	return stdout, nil

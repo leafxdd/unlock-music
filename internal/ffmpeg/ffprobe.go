@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os/exec"
 	"strings"
@@ -23,9 +24,11 @@ func (r *Result) HasAttachedPic() bool {
 }
 
 func (r *Result) getTagByKey(key string) string {
-	for k, v := range r.Format.Tags {
-		if key == strings.ToLower(k) {
-			return v
+	if r.Format != nil {
+		for k, v := range r.Format.Tags {
+			if key == strings.ToLower(k) {
+				return v
+			}
 		}
 	}
 
@@ -130,7 +133,7 @@ func ProbeReader(ctx context.Context, rd io.Reader) (*Result, error) {
 	cmd.Stdout, cmd.Stderr = stdout, stderr
 
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ffprobe run: %w, stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
 	ret := new(Result)

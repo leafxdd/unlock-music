@@ -2,9 +2,21 @@ package ffmpeg
 
 import (
 	"context"
+	"maps"
 	"os/exec"
+	"slices"
 	"strings"
 )
+
+// safeArgPath prevents a path that begins with '-' from being interpreted as an
+// ffmpeg option (argument injection via a crafted filename) by anchoring a
+// relative path to the current directory. Absolute paths never start with '-'.
+func safeArgPath(path string) string {
+	if strings.HasPrefix(path, "-") {
+		return "./" + path
+	}
+	return path
+}
 
 type ffmpegBuilder struct {
 	binary  string            // ffmpeg binary path
@@ -41,9 +53,9 @@ func (b *ffmpegBuilder) SetOption(name, value string) {
 }
 
 func (b *ffmpegBuilder) Args() (args []string) {
-	for name, val := range b.options {
+	for _, name := range slices.Sorted(maps.Keys(b.options)) {
 		args = append(args, "-"+name)
-		if val != "" {
+		if val := b.options[name]; val != "" {
 			args = append(args, val)
 		}
 	}
@@ -87,12 +99,12 @@ func (b *inputBuilder) AddOption(name, value string) {
 }
 
 func (b *inputBuilder) Args() (args []string) {
-	for name, values := range b.options {
-		for _, val := range values {
+	for _, name := range slices.Sorted(maps.Keys(b.options)) {
+		for _, val := range b.options[name] {
 			args = append(args, "-"+name, val)
 		}
 	}
-	return append(args, "-i", b.path)
+	return append(args, "-i", safeArgPath(b.path))
 }
 
 // outputBuilder is the builder for ffmpeg output options
@@ -113,12 +125,12 @@ func (b *outputBuilder) AddOption(name, value string) {
 }
 
 func (b *outputBuilder) Args() (args []string) {
-	for name, values := range b.options {
-		for _, val := range values {
+	for _, name := range slices.Sorted(maps.Keys(b.options)) {
+		for _, val := range b.options[name] {
 			args = append(args, "-"+name, val)
 		}
 	}
-	return append(args, b.path)
+	return append(args, safeArgPath(b.path))
 }
 
 // AddMetadata is the shortcut for adding "metadata" option

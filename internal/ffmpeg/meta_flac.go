@@ -3,6 +3,7 @@ package ffmpeg
 import (
 	"context"
 	"mime"
+	"os"
 	"slices"
 	"strings"
 
@@ -25,17 +26,23 @@ func updateMetaFlac(_ context.Context, outPath string, m *UpdateMetadataParams, 
 	// add metadata
 	title := m.Meta.GetTitle()
 	if title != "" {
-		_ = comment.Add(flacvorbis.FIELD_TITLE, title)
+		if err := comment.Add(flacvorbis.FIELD_TITLE, title); err != nil {
+			logger.Warn("add flac title failed", zap.Error(err))
+		}
 	}
 
 	album := m.Meta.GetAlbum()
 	if album != "" {
-		_ = comment.Add(flacvorbis.FIELD_ALBUM, album)
+		if err := comment.Add(flacvorbis.FIELD_ALBUM, album); err != nil {
+			logger.Warn("add flac album failed", zap.Error(err))
+		}
 	}
 
 	artists := m.Meta.GetArtists()
 	for _, artist := range artists {
-		_ = comment.Add(flacvorbis.FIELD_ARTIST, artist)
+		if err := comment.Add(flacvorbis.FIELD_ARTIST, artist); err != nil {
+			logger.Warn("add flac artist failed", zap.Error(err))
+		}
 	}
 
 	existCommentIdx := slices.IndexFunc(f.Meta, func(b *flac.MetaDataBlock) bool {
@@ -44,6 +51,8 @@ func updateMetaFlac(_ context.Context, outPath string, m *UpdateMetadataParams, 
 	if existCommentIdx >= 0 { // copy existing comment fields
 		exist, err := flacvorbis.ParseFromMetaDataBlock(*f.Meta[existCommentIdx])
 		if err != nil {
+			logger.Warn("parse existing flac comment failed", zap.Error(err))
+		} else {
 			for _, s := range exist.Comments {
 				if strings.HasPrefix(s, flacvorbis.FIELD_TITLE+"=") && title != "" ||
 					strings.HasPrefix(s, flacvorbis.FIELD_ALBUM+"=") && album != "" ||
@@ -77,8 +86,6 @@ func updateMetaFlac(_ context.Context, outPath string, m *UpdateMetadataParams, 
 			logger.Warn("failed to create flac cover", zap.Error(err))
 		} else {
 			coverBlock := cover.Marshal()
-			f.Meta = append(f.Meta, &coverBlock)
-
 			// add / replace flac cover
 			coverIdx := slices.IndexFunc(f.Meta, func(b *flac.MetaDataBlock) bool {
 				return b.Type == flac.Picture
@@ -91,5 +98,15 @@ func updateMetaFlac(_ context.Context, outPath string, m *UpdateMetadataParams, 
 		}
 	}
 
-	return f.Save(outPath)
+	// Save atomically: write to a sibling temp file then rename over the target,
+	// so a failure mid-write can't leave a truncated or corrupt output file.
+	tmpPath := outPath + ".tmp"
+	if err := f.Save(tmpPath); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, outPath); err != nil {
+		_ = os.Remove(tmpPath)
+		return err
+	}
+	return nil
 }
