@@ -12,7 +12,6 @@ import (
 	"git.um-react.app/um/cli/internal/processor"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type App struct {
@@ -25,18 +24,23 @@ type App struct {
 }
 
 func NewApp() *App {
-	logConfig := zap.NewProductionEncoderConfig()
-	logConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	logConfig.EncodeTime = zapcore.RFC3339TimeEncoder
-	l := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(logConfig),
-		os.Stdout,
-		zap.DebugLevel,
-	))
-	return &App{
-		logger:   l,
+	a := &App{
 		settings: loadSettings(),
 	}
+	// The logger tees to stdout (visible under `wails dev`) and to the frontend
+	// log panel via a.emitLog.
+	a.logger = newLogger(a.emitLog)
+	return a
+}
+
+// emitLog forwards a log entry to the frontend log panel. It is a no-op until
+// the Wails runtime context is ready (set in Startup) -- always the case by the
+// time any processing runs.
+func (a *App) emitLog(level, msg string) {
+	if a.ctx == nil {
+		return
+	}
+	wailsRuntime.EventsEmit(a.ctx, "log", map[string]string{"level": level, "msg": msg})
 }
 
 func (a *App) Startup(ctx context.Context) {
@@ -231,9 +235,7 @@ func (a *App) runProcessorWithCrypto(ctx context.Context, inputPath string, qmcK
 		OnProgress: func(e processor.ProgressEvent) {
 			wailsRuntime.EventsEmit(a.ctx, "file:progress", e)
 		},
-		OnLog: func(level, msg string) {
-			wailsRuntime.EventsEmit(a.ctx, "log", map[string]string{"level": level, "msg": msg})
-		},
+		// Logs reach the panel via the teed logger (see emitLog), not this hook.
 	}
 
 	proc := processor.New(processor.Config{
