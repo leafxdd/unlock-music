@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Raised the minimum Go version to 1.26.
 
+### Fixed
+- Preserve existing FLAC tags when writing metadata (an inverted check previously dropped them on success) and no longer write a duplicate front-cover image.
+- Crafted or corrupt input files no longer crash the program: the per-file pipeline recovers from panics, and the QMC/NCM/KGM/KWM/Ximalaya decoders and the AES/PKCS7 helpers validate lengths and padding instead of panicking.
+- GUI: failed files now show the real error message in the queue instead of `[object Object]`.
+- Temporary files are cleaned up on error, and the reopened temp file is closed so it can be removed on Windows.
+- Metadata/cover updating is disabled (with a warning) when ffmpeg is missing, even if the saved setting is on.
+- Ctrl-C now cancels non-watch CLI runs cleanly.
+
+### Security
+- Bound attacker-controlled length fields by the remaining file size to prevent huge allocations (DoS) from crafted files.
+- Detect WebP by its full `RIFF????WEBP` signature instead of a bare `RIFF` prefix (which also matches WAV/AVI).
+- Anchor ffmpeg input/output path arguments so a filename beginning with `-` cannot be interpreted as a flag.
+
 ## [v0.2.19] - 2025-11-26
 
 ### Fixed
