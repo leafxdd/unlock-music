@@ -2,10 +2,16 @@ package processor
 
 import (
 	"bytes"
+	"context"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"git.um-react.app/um/cli/algo/common"
+	"go.uber.org/zap"
 )
 
 func TestProgressReader(t *testing.T) {
@@ -140,5 +146,55 @@ func TestFileStatusConstants(t *testing.T) {
 		if s == "" {
 			t.Error("empty status constant")
 		}
+	}
+}
+
+// panicDecoder simulates a decoder that panics on crafted input, as several real
+// decoders can when fed malformed files (e.g. an out-of-range slice in Validate).
+// The processor must downgrade this to a failed file rather than crash the whole
+// CLI run or the GUI process.
+type panicDecoder struct{}
+
+func (panicDecoder) Validate() error            { panic("crafted file: index out of range") }
+func (panicDecoder) Read(_ []byte) (int, error) { return 0, io.EOF }
+
+func init() {
+	common.RegisterDecoder("panictest", false, func(*common.DecoderParams) common.Decoder {
+		return panicDecoder{}
+	})
+}
+
+func TestProcessFileRecoversFromPanic(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "evil.panictest")
+	if err := os.WriteFile(src, []byte("malformed"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	var failed *FileEvent
+	p := New(
+		Config{InputDir: dir, OutputDir: dir},
+		zap.NewNop(),
+		Hooks{OnFileEvent: func(e FileEvent) {
+			if e.Status == StatusFailed {
+				ev := e
+				failed = &ev
+			}
+		}},
+	)
+
+	// A panic inside the decoder must surface as an error, never crash the process.
+	err := p.ProcessFile(context.Background(), src)
+	if err == nil {
+		t.Fatal("expected an error from a panicking decoder, got nil")
+	}
+	if !strings.Contains(err.Error(), "panic") {
+		t.Errorf("error should mention panic, got: %v", err)
+	}
+	if failed == nil {
+		t.Fatal("expected a StatusFailed file event")
+	}
+	if failed.Error == nil {
+		t.Error("StatusFailed event should carry the error")
 	}
 }

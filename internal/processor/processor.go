@@ -76,7 +76,7 @@ func (p *Processor) ProcessFile(ctx context.Context, filePath string) error {
 
 	p.hooks.OnFileEvent(FileEvent{Path: filePath, Status: StatusValidating})
 
-	if err := p.process(ctx, filePath, allDec); err != nil {
+	if err := p.safeProcess(ctx, filePath, allDec); err != nil {
 		p.hooks.OnFileEvent(FileEvent{Path: filePath, Status: StatusFailed, Error: err})
 		return err
 	}
@@ -150,6 +150,23 @@ func (p *Processor) findDecoder(decoders []common.DecoderFactory, params *common
 		}
 	}
 	return nil, nil, errors.New("no any decoder can resolve the file")
+}
+
+// safeProcess runs process and converts any panic into an error. The per-file
+// decoders parse untrusted, potentially crafted input; a panic there (out-of-range
+// slice, divide-by-zero, nil deref) would otherwise abort the whole CLI run and
+// crash the GUI process. Recovering here downgrades it to a single failed file.
+func (p *Processor) safeProcess(ctx context.Context, inputFile string, allDec []common.DecoderFactory) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			p.logger.Error("recovered from panic while processing file",
+				zap.String("source", inputFile),
+				zap.Any("panic", r),
+				zap.Stack("stack"))
+			err = fmt.Errorf("panic while processing %q: %v", inputFile, r)
+		}
+	}()
+	return p.process(ctx, inputFile, allDec)
 }
 
 func (p *Processor) process(ctx context.Context, inputFile string, allDec []common.DecoderFactory) error {
