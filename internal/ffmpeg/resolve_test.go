@@ -91,7 +91,7 @@ func TestEmbeddedExtractRuns(t *testing.T) {
 		t.Skip("no embedded ffmpeg in this build (run with -tags um_embed_ffmpeg)")
 	}
 	clearResolveCache()
-	t.Cleanup(clearResolveCache)
+	t.Cleanup(Cleanup)        // also removes the temp extraction
 	t.Setenv("UM_FFMPEG", "") // force the embedded path, not an env override
 
 	p, err := ResolveBinary("ffmpeg")
@@ -99,9 +99,8 @@ func TestEmbeddedExtractRuns(t *testing.T) {
 		t.Fatalf("ResolveBinary: %v", err)
 	}
 
-	cache, _ := os.UserCacheDir()
-	if want := filepath.Join(cache, "unlock-music"); !strings.HasPrefix(p, want) {
-		t.Errorf("resolved %q, expected an extracted path under %q", p, want)
+	if base := filepath.Base(filepath.Dir(p)); !strings.HasPrefix(base, "um-ffmpeg-") {
+		t.Errorf("resolved %q, expected extraction under a um-ffmpeg-* temp dir", p)
 	}
 
 	out, err := exec.Command(p, "-version").CombinedOutput()
@@ -110,5 +109,29 @@ func TestEmbeddedExtractRuns(t *testing.T) {
 	}
 	if !bytes.Contains(out, []byte("ffmpeg version")) {
 		t.Errorf("unexpected -version output: %s", out)
+	}
+}
+
+// TestEmbeddedCleanupRemovesExtraction confirms Cleanup deletes the extracted
+// binary so nothing persists on disk. Embedded builds only.
+func TestEmbeddedCleanupRemovesExtraction(t *testing.T) {
+	if len(embeddedBinary("ffmpeg")) == 0 {
+		t.Skip("no embedded ffmpeg in this build (run with -tags um_embed_ffmpeg)")
+	}
+	clearResolveCache()
+	t.Cleanup(Cleanup)
+	t.Setenv("UM_FFMPEG", "")
+
+	p, err := ResolveBinary("ffmpeg")
+	if err != nil {
+		t.Fatalf("ResolveBinary: %v", err)
+	}
+	if _, err := os.Stat(p); err != nil {
+		t.Fatalf("extracted binary not found: %v", err)
+	}
+
+	Cleanup()
+	if _, err := os.Stat(p); !os.IsNotExist(err) {
+		t.Errorf("Cleanup left the extraction behind: stat err = %v", err)
 	}
 }

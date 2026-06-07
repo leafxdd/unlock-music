@@ -17,8 +17,8 @@ import (
 //  1. An explicit path from the environment (UM_FFMPEG / UM_FFPROBE). Lets a user
 //     force a specific build and is the escape hatch if a bundled binary misbehaves.
 //  2. The binary embedded into this build — release builds compiled with the
-//     `um_embed_ffmpeg` tag after running build/ffmpeg/build.sh — extracted once
-//     into the user cache dir.
+//     `um_embed_ffmpeg` tag after running build/ffmpeg/build.sh — extracted into a
+//     per-process temp dir that Cleanup() removes on exit (nothing persists).
 //  3. A binary found on PATH. This is the dev fallback (the default `go build`
 //     embeds nothing) and the only option on platforms not yet bundled.
 //
@@ -30,6 +30,47 @@ var (
 	resolveCache = map[string]string{}
 	resolveErr   = map[string]error{}
 )
+
+var (
+	extractMu   sync.Mutex
+	extractDir  string // per-process temp dir for extracted binaries ("" until created)
+	extractErr  error
+	extractInit bool
+)
+
+// tempExtractDir lazily creates a private temp directory to hold the extracted
+// binaries (shared by ffmpeg and ffprobe); Cleanup removes it.
+func tempExtractDir() (string, error) {
+	extractMu.Lock()
+	defer extractMu.Unlock()
+	if !extractInit {
+		extractDir, extractErr = os.MkdirTemp("", "um-ffmpeg-"+embeddedVersion+"-")
+		extractInit = true
+	}
+	return extractDir, extractErr
+}
+
+// Cleanup removes the binaries extracted from the embedded payload this run, so the
+// bundled ffmpeg never persists on disk between runs. The CLI defers it; the GUI
+// calls it from OnShutdown. It is a no-op when nothing was extracted (the UM_FFMPEG
+// override or a PATH binary was used, or this build embeds nothing).
+func Cleanup() {
+	// Drop memoised paths so a later resolve re-extracts instead of handing back a
+	// path under the directory we are about to delete.
+	resolveMu.Lock()
+	resolveCache = map[string]string{}
+	resolveErr = map[string]error{}
+	resolveMu.Unlock()
+
+	extractMu.Lock()
+	dir := extractDir
+	extractDir, extractErr, extractInit = "", nil, false
+	extractMu.Unlock()
+
+	if dir != "" {
+		_ = os.RemoveAll(dir)
+	}
+}
 
 // ResolveBinary returns a usable path for the named ffmpeg-family binary
 // ("ffmpeg" or "ffprobe"), memoised for the lifetime of the process. The first
@@ -119,9 +160,15 @@ func exeName(name string) string {
 	return name
 }
 
-// extractEmbedded gunzips the embedded binary into a per-version user cache dir
-// and returns its path, reusing a prior extraction when the sizes match.
+// extractEmbedded gunzips the embedded binary into the per-process temp dir
+// (created lazily, shared by ffmpeg and ffprobe) and returns its path. Cleanup()
+// removes the dir on exit, so nothing is left on disk between runs.
 func extractEmbedded(name string, gz []byte) (string, error) {
+	dir, err := tempExtractDir()
+	if err != nil {
+		return "", err
+	}
+
 	zr, err := gzip.NewReader(bytes.NewReader(gz))
 	if err != nil {
 		return "", err
@@ -132,45 +179,10 @@ func extractEmbedded(name string, gz []byte) (string, error) {
 		return "", err
 	}
 
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return "", err
-	}
-	dir := filepath.Join(cacheDir, "unlock-music", "ffmpeg", embeddedVersion)
+	// The temp dir is private to this process (unique name) and extraction runs
+	// under resolveMu, so a plain write is safe — no cross-instance race to guard.
 	target := filepath.Join(dir, exeName(name))
-
-	if fi, err := os.Stat(target); err == nil && fi.Size() == int64(len(raw)) {
-		return target, nil // already extracted
-	}
-
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-
-	// Write to a unique temp file then atomically rename, so concurrent CLI/GUI
-	// instances cannot read a half-written binary.
-	tmp, err := os.CreateTemp(dir, exeName(name)+".tmp-*")
-	if err != nil {
-		return "", err
-	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName) // no-op once the rename succeeds
-
-	if _, err := tmp.Write(raw); err != nil {
-		tmp.Close()
-		return "", err
-	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
-	if err := os.Chmod(tmpName, 0o755); err != nil {
-		return "", err
-	}
-	if err := os.Rename(tmpName, target); err != nil {
-		// A racing process may have created it first; accept a valid existing file.
-		if fi, statErr := os.Stat(target); statErr == nil && fi.Size() == int64(len(raw)) {
-			return target, nil
-		}
+	if err := os.WriteFile(target, raw, 0o755); err != nil {
 		return "", err
 	}
 	return target, nil
