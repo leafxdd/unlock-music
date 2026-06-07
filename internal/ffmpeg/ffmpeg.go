@@ -16,7 +16,11 @@ import (
 )
 
 func ExtractAlbumArt(ctx context.Context, rd io.Reader) (*bytes.Buffer, error) {
-	cmd := exec.CommandContext(ctx, "ffmpeg",
+	bin, err := ResolveBinary("ffmpeg")
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(ctx, bin,
 		"-i", "pipe:0", // input from stdin
 		"-an",              // disable audio
 		"-codec:v", "copy", // copy video(image) codec
@@ -53,6 +57,14 @@ func UpdateMeta(ctx context.Context, outPath string, params *UpdateMetadataParam
 		return updateMetaFFmpeg(ctx, outPath, params)
 	}
 }
+
+// SupportsMetadata reports whether UpdateMeta can write tags and cover art for the
+// given output container. DSDIFF (.dff) has no ffmpeg muxer, so its metadata is
+// skipped and the decrypted stream is copied verbatim instead.
+func SupportsMetadata(audioExt string) bool {
+	return !strings.EqualFold(audioExt, ".dff")
+}
+
 func updateMetaFFmpeg(ctx context.Context, outPath string, params *UpdateMetadataParams) error {
 	builder := newFFmpegBuilder()
 
@@ -117,6 +129,11 @@ func updateMetaFFmpeg(ctx context.Context, outPath string, params *UpdateMetadat
 	}
 
 	// execute ffmpeg
+	bin, err := ResolveBinary("ffmpeg")
+	if err != nil {
+		return fmt.Errorf("locate ffmpeg: %w", err)
+	}
+	builder.SetBinary(bin)
 	cmd := builder.Command(ctx)
 
 	if stdout, err := cmd.CombinedOutput(); err != nil {

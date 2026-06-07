@@ -209,7 +209,15 @@ func (p *Processor) process(ctx context.Context, inputFile string, allDec []comm
 	audio := io.MultiReader(header, progReader)
 	params.AudioExt = sniff.AudioExtensionWithFallback(header.Bytes(), ".mp3")
 
-	if p.config.UpdateMetadata {
+	// DSDIFF (.dff) has no ffmpeg muxer, so metadata cannot be written; copy the
+	// decrypted stream verbatim instead of failing the file.
+	wantMeta := p.config.UpdateMetadata && ffmpeg.SupportsMetadata(params.AudioExt)
+	if p.config.UpdateMetadata && !wantMeta {
+		logger.Warn("metadata writing not supported for this format; copying without metadata",
+			zap.String("ext", params.AudioExt))
+	}
+
+	if wantMeta {
 		p.hooks.OnFileEvent(FileEvent{Path: inputFile, Status: StatusMetadata})
 
 		if audioMetaGetter, ok := dec.(common.AudioMetaGetter); ok {
@@ -241,7 +249,7 @@ func (p *Processor) process(ctx context.Context, inputFile string, allDec []comm
 		}
 	}
 
-	if p.config.UpdateMetadata && params.Meta != nil {
+	if wantMeta && params.Meta != nil {
 		if coverGetter, ok := dec.(common.CoverImageGetter); ok {
 			coverCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()

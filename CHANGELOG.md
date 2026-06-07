@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Optional bundled ffmpeg/ffprobe. Release builds compiled with the `um_embed_ffmpeg` tag embed a custom **minimal static** ffmpeg (only the demuxers/muxers/encoders the app actually exercises — audio is always stream-copied), so the GUI and CLI work without a system ffmpeg. At runtime the binary is resolved from `UM_FFMPEG`/`UM_FFPROBE`, then the embedded copy (extracted once to the user cache dir), then PATH. Build it with `build/ffmpeg/build.sh`; currently bundled for windows/amd64.
+
 ### Changed
 - Raised the minimum Go version to 1.26.
+- DSDIFF (`.dff`) files are now copied without metadata instead of failing the file, because ffmpeg has no DSD muxer to write tags into.
 
 ### Fixed
 - Preserve existing FLAC tags when writing metadata (an inverted check previously dropped them on success) and no longer write a duplicate front-cover image.

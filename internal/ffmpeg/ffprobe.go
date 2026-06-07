@@ -120,7 +120,11 @@ type ProbeDisposition struct {
 }
 
 func ProbeReader(ctx context.Context, rd io.Reader) (*Result, error) {
-	cmd := exec.CommandContext(ctx, "ffprobe",
+	bin, err := ResolveBinary("ffprobe")
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(ctx, bin,
 		"-v", "quiet", // disable logging
 		"-print_format", "json", // use json format
 		"-show_format", "-show_streams", "-show_error", // retrieve format and streams

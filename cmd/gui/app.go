@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sync"
 
 	"git.um-react.app/um/cli/algo/common"
 	"git.um-react.app/um/cli/algo/qmc"
+	"git.um-react.app/um/cli/internal/ffmpeg"
 	"git.um-react.app/um/cli/internal/processor"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.uber.org/zap"
@@ -49,8 +49,7 @@ func (a *App) Startup(ctx context.Context) {
 }
 
 func (a *App) CheckFFmpeg() bool {
-	_, err := exec.LookPath("ffmpeg")
-	return err == nil
+	return ffmpeg.Available()
 }
 
 func (a *App) GetSettings() Settings {

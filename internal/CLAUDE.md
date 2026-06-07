@@ -78,10 +78,12 @@ Uses `fsnotify` watcher. First runs `ProcessDir` on existing files, then watches
 | `ffprobe.go` | `ProbeReader()` -- JSON probe for format/tags/streams via stdin pipe |
 | `meta_flac.go` | `updateMetaFlac()` -- native FLAC metadata writing via `go-flac` (avoids ffmpeg for FLAC) |
 | `options.go` | `ffmpegBuilder` / `inputBuilder` / `outputBuilder` -- fluent builder for ffmpeg CLI args |
+| `resolve.go` | `ResolveBinary()` / `Available()` / `SupportsMetadata()` -- locate ffmpeg/ffprobe (`UM_FFMPEG` env -> embedded -> PATH), extract the embedded binary to the user cache dir |
+| `embed_*.go` | Per-platform embedded binaries behind the `um_embed_ffmpeg` build tag; `embed_off.go` is the default (no embed); `bin/<goos>_<goarch>/` holds the gzipped binaries (built by `build/ffmpeg/build.sh`) |
 | `hide_windows.go` | `hideWindow()` -- sets `CREATE_NO_WINDOW` on Windows to suppress console popup |
 | `hide_other.go` | `hideWindow()` -- no-op on non-Windows |
 
-Key: FLAC metadata is written natively (no ffmpeg dependency for FLAC). Other formats (MP3, M4A, WAV, OGG) use ffmpeg.
+Key: FLAC metadata is written natively (no ffmpeg dependency for FLAC). Other formats (MP3, M4A, WAV, OGG) use ffmpeg. DSDIFF (`.dff`) is copied without metadata (no ffmpeg DSD muxer). ffmpeg/ffprobe can be bundled into release builds (custom minimal static build, `um_embed_ffmpeg` tag) — see `build/ffmpeg/` — and are otherwise taken from PATH.
 
 ## sniff/ -- Audio Format Detection
 
@@ -110,5 +112,6 @@ Used by QMC decoder to load encryption keys from QQ Music's local storage.
 
 | Date | Change |
 |------|--------|
+| 2026-06-07 | Added bundled-ffmpeg support: `resolve.go` (binary resolution + `SupportsMetadata`), `embed_*.go` (`um_embed_ffmpeg` tag), DSD copies without metadata |
 | 2026-05-04 | Updated: added processor package docs, ffmpeg file details (hide_windows, options, meta_flac), updated structure diagram |
 | 2026-04-21 | Initial CLAUDE.md |
