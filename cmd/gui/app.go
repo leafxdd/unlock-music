@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync"
 
 	"git.um-react.app/um/cli/algo/common"
@@ -219,7 +220,8 @@ func (a *App) runProcessor(ctx context.Context, inputPath string) error {
 	}
 
 	kggDbPath := s.KggDbPath
-	if kggDbPath == "" {
+	if kggDbPath == "" && runtime.GOOS == "windows" {
+		// The KGG key DB only exists on Windows; the default path is meaningless elsewhere.
 		kggDbPath = filepath.Join(os.Getenv("APPDATA"), "Kugou8", "KGMusicV3.db")
 	}
 
@@ -258,12 +260,18 @@ func (a *App) runProcessorWithCrypto(ctx context.Context, inputPath string, qmcK
 		// Logs reach the panel via the teed logger (see emitLog), not this hook.
 	}
 
+	updateMetadata := s.UpdateMetadata
+	if updateMetadata && !a.CheckFFmpeg() {
+		a.logger.Warn("ffmpeg not found; metadata and cover updating is disabled for this run")
+		updateMetadata = false
+	}
+
 	proc := processor.New(processor.Config{
 		InputDir:        inputDir,
 		OutputDir:       outputDir,
 		SkipNoop:        s.SkipNoop,
 		RemoveSource:    s.RemoveSource,
-		UpdateMetadata:  s.UpdateMetadata,
+		UpdateMetadata:  updateMetadata,
 		OverwriteOutput: s.OverwriteOutput,
 		Crypto: common.CryptoParams{
 			KggDbPath: kggDbPath,

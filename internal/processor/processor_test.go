@@ -194,7 +194,7 @@ func TestProcessFileRecoversFromPanic(t *testing.T) {
 	if failed == nil {
 		t.Fatal("expected a StatusFailed file event")
 	}
-	if failed.Error == nil {
-		t.Error("StatusFailed event should carry the error")
+	if failed.Error == "" {
+		t.Error("StatusFailed event should carry the error message")
 	}
 }

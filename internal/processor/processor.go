@@ -77,7 +77,7 @@ func (p *Processor) ProcessFile(ctx context.Context, filePath string) error {
 	p.hooks.OnFileEvent(FileEvent{Path: filePath, Status: StatusValidating})
 
 	if err := p.safeProcess(ctx, filePath, allDec); err != nil {
-		p.hooks.OnFileEvent(FileEvent{Path: filePath, Status: StatusFailed, Error: err})
+		p.hooks.OnFileEvent(FileEvent{Path: filePath, Status: StatusFailed, Error: err.Error()})
 		return err
 	}
 

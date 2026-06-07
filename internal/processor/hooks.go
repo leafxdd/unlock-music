@@ -18,7 +18,10 @@ type FileEvent struct {
 	Status     FileStatus
 	OutputPath string
 	AudioExt   string
-	Error      error
+	// Error is a human-readable message, empty when there is no error. It is a
+	// string (not error) so it serialises usefully when emitted to the GUI over
+	// Wails, where a Go error marshals to an empty JSON object.
+	Error string
 }
 
 type ProgressEvent struct {
