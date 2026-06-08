@@ -33,9 +33,12 @@ var AppVersion = "custom"
 var logger = setupLogger(false) // TODO: inject logger to application, instead of using global logger
 
 func main() {
-	module, ok := debug.ReadBuildInfo()
-	if ok && module.Main.Version != "(devel)" {
-		AppVersion = module.Main.Version
+	// Fall back to the VCS build version only when no explicit version was linked
+	// in via -X main.AppVersion (release builds set it; it must not be clobbered).
+	if AppVersion == "custom" {
+		if module, ok := debug.ReadBuildInfo(); ok && module.Main.Version != "(devel)" {
+			AppVersion = module.Main.Version
+		}
 	}
 	app := cli.App{
 		Name:     "Unlock Music CLI",
