@@ -186,6 +186,7 @@ Gitea Actions (`.gitea/workflows/build.yml`): test -> cross-compile 6 CLI target
 
 | Date | Change |
 |------|--------|
+| 2026-06-08 | Bundled ffmpeg now cross-compiles for windows/amd64+arm64 and linux/amd64+arm64 (`build/ffmpeg/build.sh` gained cross-prefix/cc/arch/target-os + from-source static zlib; added `embed_{windows_arm64,linux_amd64,linux_arm64}.go`); macOS stays on PATH fallback |
 | 2026-06-07 | Migrated baseline to Go 1.26; hardened decoders against crafted files (recover() backstop, bounds/padding/key checks across crypto, ncm, qmc, kgm, kwm, ximalaya); fixed FLAC tag-loss + duplicate-cover; fixed KGG cache race; expanded tests 8 -> 19; removed dead `internal/logging`; scoped CI to non-GUI packages |
 | 2026-06-07 | Corrected Testing Strategy: 6 -> 8 test files (added `algo/common/dispatch_test.go`, `internal/processor/processor_test.go`); refined processor-test note |
 | 2026-05-04 | Updated root CLAUDE.md: added GUI module, processor package, frontend docs, module structure diagram, updated architecture |

@@ -24,6 +24,11 @@ To prefer a system ffmpeg over the bundled one, set `UM_FFMPEG`.
 
 ## Building
 
+`build.sh` builds one target at a time, inferring `GOOS`/`GOARCH` from the host;
+override them (with a cross toolchain) to build any target.
+
+### Native build
+
 Run in a POSIX shell with a C toolchain. On Windows use the **MSYS2 MINGW64**
 shell (a bare Git-Bash lacks `make`).
 
@@ -37,7 +42,31 @@ build/ffmpeg/build.sh
 ```
 
 Outputs land in `internal/ffmpeg/bin/<goos>_<goarch>/`:
-`ffmpeg.exe.gz`, `ffprobe.exe.gz`, `version.txt`.
+`ffmpeg[.exe].gz`, `ffprobe[.exe].gz`, `version.txt` (no `.exe` on non-Windows).
+
+### Cross-compiling the bundled targets from one Linux host
+
+Set `GOOS`/`GOARCH` plus a toolchain; `build.sh` then compiles a **static zlib from
+source** for the target automatically and passes the right
+`--cross-prefix`/`--cc`/`--arch`/`--target-os` to ffmpeg.
+
+```sh
+# Debian/Ubuntu prerequisites:
+apt-get install -y git build-essential nasm pkg-config \
+    gcc-aarch64-linux-gnu gcc-mingw-w64-x86-64
+# windows/arm64 also needs llvm-mingw (clang-based) on PATH:
+#   https://github.com/mstorsjo/llvm-mingw/releases
+
+build/ffmpeg/build.sh                                                       # linux/amd64 (native)
+GOOS=linux   GOARCH=arm64 CROSS_PREFIX=aarch64-linux-gnu-  build/ffmpeg/build.sh
+GOOS=windows GOARCH=amd64 CROSS_PREFIX=x86_64-w64-mingw32- build/ffmpeg/build.sh
+GOOS=windows GOARCH=arm64 CROSS_PREFIX=aarch64-w64-mingw32- \
+    CC=aarch64-w64-mingw32-clang build/ffmpeg/build.sh
+```
+
+`nasm` is only needed for amd64 targets (arm64 uses the integrated assembler).
+macOS is intentionally not bundled — darwin falls back to a PATH ffmpeg
+(`brew install ffmpeg`).
 
 Then build the app with embedding enabled:
 
@@ -113,6 +142,11 @@ copies the decrypted stream verbatim. The `dsf`/`iff` demuxers are kept only so 
 
 ## Adding another platform
 
-`build.sh` infers `GOOS`/`GOARCH` from the host (override via env). After building
-for a new target, add an `internal/ffmpeg/embed_<goos>_<goarch>.go` mirroring
-`embed_windows_amd64.go`. Currently bundled: **windows/amd64**.
+Currently bundled: **windows/amd64, windows/arm64, linux/amd64, linux/arm64** —
+each has an `internal/ffmpeg/embed_<goos>_<goarch>.go`. macOS is deliberately left
+on the PATH fallback.
+
+To bundle a new target: build its binaries (above), add an
+`internal/ffmpeg/embed_<goos>_<goarch>.go` mirroring an existing one, and remove
+the combo from the negation in `embed_unsupported.go` so it no longer falls
+through to PATH.

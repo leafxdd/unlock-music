@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Optional bundled ffmpeg/ffprobe. Release builds compiled with the `um_embed_ffmpeg` tag embed a custom **minimal static** ffmpeg (only the demuxers/muxers/encoders the app actually exercises — audio is always stream-copied), so the GUI and CLI work without a system ffmpeg. At runtime the binary is resolved from `UM_FFMPEG`/`UM_FFPROBE`, then the embedded copy (extracted to a temp dir and removed on exit), then PATH. Build it with `build/ffmpeg/build.sh`; currently bundled for windows/amd64.
+- Optional bundled ffmpeg/ffprobe. Release builds compiled with the `um_embed_ffmpeg` tag embed a custom **minimal static** ffmpeg (only the demuxers/muxers/encoders the app actually exercises — audio is always stream-copied), so the GUI and CLI work without a system ffmpeg. At runtime the binary is resolved from `UM_FFMPEG`/`UM_FFPROBE`, then the embedded copy (extracted to a temp dir and removed on exit), then PATH. Build it with `build/ffmpeg/build.sh`, which cross-compiles every bundled target (windows/amd64, windows/arm64, linux/amd64, linux/arm64) from one Linux host; macOS uses the PATH fallback.
 
 ### Changed
 - Raised the minimum Go version to 1.26.

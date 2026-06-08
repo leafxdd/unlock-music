@@ -79,7 +79,7 @@ Uses `fsnotify` watcher. First runs `ProcessDir` on existing files, then watches
 | `meta_flac.go` | `updateMetaFlac()` -- native FLAC metadata writing via `go-flac` (avoids ffmpeg for FLAC) |
 | `options.go` | `ffmpegBuilder` / `inputBuilder` / `outputBuilder` -- fluent builder for ffmpeg CLI args |
 | `resolve.go` | `ResolveBinary()` / `Available()` / `SupportsMetadata()` / `Cleanup()` -- locate ffmpeg/ffprobe (`UM_FFMPEG` env -> embedded -> PATH); extract the embedded binary to a temp dir that `Cleanup()` removes on exit |
-| `embed_*.go` | Per-platform embedded binaries behind the `um_embed_ffmpeg` build tag; `embed_off.go` is the default (no embed); `bin/<goos>_<goarch>/` holds the gzipped binaries (built by `build/ffmpeg/build.sh`) |
+| `embed_*.go` | Per-platform embedded binaries behind the `um_embed_ffmpeg` build tag (bundled: windows/amd64+arm64, linux/amd64+arm64; macOS uses PATH); `embed_off.go` is the default (no embed), `embed_unsupported.go` the PATH fallback for unbundled targets; `bin/<goos>_<goarch>/` holds the gzipped binaries (built by `build/ffmpeg/build.sh`) |
 | `hide_windows.go` | `hideWindow()` -- sets `CREATE_NO_WINDOW` on Windows to suppress console popup |
 | `hide_other.go` | `hideWindow()` -- no-op on non-Windows |
 
@@ -112,6 +112,7 @@ Used by QMC decoder to load encryption keys from QQ Music's local storage.
 
 | Date | Change |
 |------|--------|
+| 2026-06-08 | Bundled ffmpeg extended to multiple platforms: `build/ffmpeg/build.sh` cross-compiles windows/amd64+arm64 and linux/amd64+arm64 (cross-prefix/cc/arch/target-os + from-source static zlib); added `embed_{windows_arm64,linux_amd64,linux_arm64}.go` and widened `embed_unsupported.go`; macOS stays on PATH |
 | 2026-06-07 | Added bundled-ffmpeg support: `resolve.go` (binary resolution + `SupportsMetadata`), `embed_*.go` (`um_embed_ffmpeg` tag), DSD copies without metadata |
 | 2026-05-04 | Updated: added processor package docs, ffmpeg file details (hide_windows, options, meta_flac), updated structure diagram |
 | 2026-04-21 | Initial CLAUDE.md |
