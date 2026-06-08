@@ -21,6 +21,15 @@
 # Prerequisites (macOS, Homebrew):
 #   brew install nasm pkg-config   # zlib ships with the SDK
 #
+# Cross-compiling (build several targets from one Linux host): set GOOS/GOARCH and
+# a toolchain. Examples (Debian/Ubuntu package in parentheses):
+#   linux/arm64    CROSS_PREFIX=aarch64-linux-gnu-     (gcc-aarch64-linux-gnu)
+#   windows/amd64  CROSS_PREFIX=x86_64-w64-mingw32-    (gcc-mingw-w64-x86-64)
+#   windows/arm64  CROSS_PREFIX=aarch64-w64-mingw32- CC=aarch64-w64-mingw32-clang
+#                  (llvm-mingw: github.com/mstorsjo/llvm-mingw/releases)
+# Cross builds compile a static zlib from source automatically (ZLIB_FROM_SOURCE);
+# nasm is only needed for amd64 targets (arm64 uses the integrated assembler).
+#
 set -euo pipefail
 
 # ---- configuration ---------------------------------------------------------
@@ -53,6 +62,66 @@ if [ ! -d "$SRC/.git" ]; then
 else
   git -C "$SRC" fetch --depth 1 origin "$FFMPEG_REF"
   git -C "$SRC" checkout -f "$FFMPEG_REF"
+fi
+
+# ---- cross-compilation toolchain -------------------------------------------
+# Native build by default. To cross-compile, set CROSS_PREFIX (the binutils
+# prefix, e.g. aarch64-linux-gnu-, x86_64-w64-mingw32-, aarch64-w64-mingw32-) and,
+# for clang-based toolchains such as llvm-mingw, CC (e.g. aarch64-w64-mingw32-clang).
+CROSS_PREFIX="${CROSS_PREFIX:-}"
+CC="${CC:-}"
+
+CROSS=0
+if [ -n "$CROSS_PREFIX" ] || [ -n "$CC" ] \
+   || [ "$GOOS" != "$(host_goos)" ] || [ "$GOARCH" != "$(host_goarch)" ]; then
+  CROSS=1
+fi
+
+# ffmpeg --arch / --target-os for the target.
+case "$GOARCH" in
+  amd64) FF_ARCH=x86_64 ;;
+  arm64) FF_ARCH=aarch64 ;;
+  *)     FF_ARCH="$GOARCH" ;;
+esac
+case "$GOOS" in
+  windows) FF_TARGET_OS=mingw32 ;;
+  darwin)  FF_TARGET_OS=darwin ;;
+  *)       FF_TARGET_OS="$GOOS" ;;
+esac
+
+# Strip for the target — the host strip cannot strip foreign binaries.
+STRIP_BIN="${STRIP:-${CROSS_PREFIX}strip}"
+
+# ---- static zlib (required by the png decoder) -----------------------------
+# Cross builds compile zlib from source into a per-target prefix: uniform across
+# targets, and the only option for windows/arm64 (no packaged cross zlib). Native
+# builds use the system zlib; set ZLIB_FROM_SOURCE=1 to force from-source there too.
+ZLIB_FROM_SOURCE="${ZLIB_FROM_SOURCE:-$CROSS}"
+
+build_zlib() {
+  local zprefix="$1"
+  local zsrc="$WORK/zlib-src"
+  local zcc="${CC:-${CROSS_PREFIX}gcc}"
+  [ -f "$zprefix/lib/libz.a" ] && return 0          # already built (cached)
+  if [ ! -d "$zsrc/.git" ]; then
+    git clone --depth 1 --branch v1.3.1 https://github.com/madler/zlib.git "$zsrc"
+  fi
+  (
+    cd "$zsrc"
+    "$MAKE" distclean >/dev/null 2>&1 || true
+    CC="$zcc" AR="${CROSS_PREFIX}ar" RANLIB="${CROSS_PREFIX}ranlib" \
+      ./configure --static --prefix="$zprefix"
+    "$MAKE" -j"$JOBS" libz.a
+    "$MAKE" install
+  )
+}
+
+if [ "$ZLIB_FROM_SOURCE" = 1 ]; then
+  ZPREFIX="$WORK/zlib-${GOOS}_${GOARCH}"
+  echo ">> building static zlib for $GOOS/$GOARCH -> $ZPREFIX"
+  build_zlib "$ZPREFIX"
+  EXTRA_CFLAGS="-I$ZPREFIX/include ${EXTRA_CFLAGS:-}"
+  EXTRA_LDFLAGS="-L$ZPREFIX/lib ${EXTRA_LDFLAGS:-}"
 fi
 
 # ---- minimal component set (comments allowed inside the array) -------------
@@ -95,27 +164,29 @@ configure_flags=(
   --enable-filter=scale,format,null,aformat,anull,aresample
 )
 
-# Force the mingw target on Windows so the build works from any MSYS2 shell
-# flavour (a plain "MSYS" shell makes configure refuse a native build); derived
-# from GOARCH so it stays correct for arm64. The toolchain (gcc) is native, so no
-# cross-prefix is needed.
-if [ "$GOOS" = windows ]; then
-  case "$GOARCH" in
-    amd64) FF_ARCH=x86_64 ;;
-    arm64) FF_ARCH=aarch64 ;;
-    *)     FF_ARCH="$GOARCH" ;;
-  esac
-  configure_flags+=(--target-os=mingw32 --arch="$FF_ARCH")
+# Target arch/OS. Required when cross-compiling (alongside the cross-prefix / cc);
+# also forced on a native Windows build so configure does not refuse a "native"
+# MSYS build regardless of the MSYS2 shell flavour.
+if [ "$CROSS" = 1 ]; then
+  configure_flags+=(--enable-cross-compile --arch="$FF_ARCH" --target-os="$FF_TARGET_OS")
+  [ -n "$CROSS_PREFIX" ] && configure_flags+=(--cross-prefix="$CROSS_PREFIX")
+  [ -n "$CC" ] && configure_flags+=(--cc="$CC")
+elif [ "$GOOS" = windows ]; then
+  configure_flags+=(--target-os="$FF_TARGET_OS" --arch="$FF_ARCH")
 fi
 
 # ---- configure + build -----------------------------------------------------
 cd "$SRC"
+# The ffmpeg source tree is reused across targets, so wipe any previous configure
+# first — a stale config/objects from another GOOS/GOARCH must not leak into this
+# build (it manifests as undefined symbols or arch-mismatch errors at link time).
+"$MAKE" distclean >/dev/null 2>&1 || true
 ./configure "${configure_flags[@]}"
 "$MAKE" -j"$JOBS" ffmpeg$EXE ffprobe$EXE
 
 # ---- strip, compress, stage ------------------------------------------------
 mkdir -p "$OUTDIR"
-strip "ffmpeg$EXE" "ffprobe$EXE"
+"$STRIP_BIN" "ffmpeg$EXE" "ffprobe$EXE"
 gzip -9 -c "ffmpeg$EXE"  > "$OUTDIR/ffmpeg$EXE.gz"
 gzip -9 -c "ffprobe$EXE" > "$OUTDIR/ffprobe$EXE.gz"
 printf '%s+um%s\n' "$FFMPEG_REF" "$BUILD_REV" > "$OUTDIR/version.txt"
