@@ -1,4 +1,4 @@
-//go:build um_embed_ffmpeg && !(windows && amd64)
+//go:build um_embed_ffmpeg && !((windows && amd64) || (windows && arm64) || (linux && amd64) || (linux && arm64))
 
 package ffmpeg
 
