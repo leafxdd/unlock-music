@@ -2,7 +2,7 @@
 
 # cmd/um/ -- CLI Entry Point
 
-> Updated: 2026-05-04
+> Updated: 2026-06-08
 
 ## Module Purpose
 
@@ -17,6 +17,8 @@ Single-file entry point. Contains:
 3. **Processor integration**: Constructs `processor.New(cfg, logger, hooks)` from CLI flags, delegates to `ProcessFile`, `ProcessDir`, or `WatchDir`.
 4. **MMKV loading**: Reads QQ Music key database at startup via `qmc.LoadMMKVOrDefault()`
 5. **Supported extensions**: `--supported-ext` flag prints registered decoder extensions
+6. **Version**: `AppVersion` honors a `-X main.AppVersion=...` linker override (release/CI builds); it falls back to the VCS build info only when left as `"custom"`, so an injected tag is never clobbered (fixed in `ef088fe`)
+7. **Bundled ffmpeg**: `defer ffmpeg.Cleanup()` removes any ffmpeg/ffprobe extracted from the embedded payload on exit. Build a self-contained CLI with `go build -tags um_embed_ffmpeg ./cmd/um` (see `build/ffmpeg/`)
 
 ## CLI Flags
 
@@ -51,6 +53,7 @@ Single-file entry point. Contains:
 |---------|------|
 | `urfave/cli/v2` | CLI framework |
 | `internal/processor` | Shared processing pipeline |
+| `internal/ffmpeg` | ffmpeg resolution + `Cleanup()` of the embedded binary on exit |
 | `algo/qmc` | QMC key loading |
 | `go.uber.org/zap` | Logging |
 
@@ -64,5 +67,6 @@ Single-file entry point. Contains:
 
 | Date | Change |
 |------|--------|
+| 2026-06-08 | Documented bundled-ffmpeg integration (`um_embed_ffmpeg` tag, `defer ffmpeg.Cleanup()`) and the `AppVersion` precedence fix (`-X main.AppVersion` over VCS build info) |
 | 2026-05-04 | Updated: reflects processor extraction, current CLI flags, removed inline processor logic |
 | 2026-04-21 | Initial CLAUDE.md |

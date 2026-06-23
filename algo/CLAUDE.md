@@ -2,7 +2,7 @@
 
 # algo/ -- Decryption Algorithm Packages
 
-> Updated: 2026-05-04
+> Updated: 2026-06-08
 
 ## Structure
 
@@ -55,7 +55,7 @@ Sub-packages:
 - `client/`: HTTP client for QQ Music API (track info, search, album art, CDN URLs) -- `base.go`, `cover.go`, `search.go`, `track.go`
 - `qmmac/`: macOS-specific MMKV key loading for QQ Music v8 (`v8_darwin.go`) and v10 (`v10_darwin.go`)
 
-Tests: `cipher_map_test.go`, `cipher_rc4_test.go`, `key_derive_test.go`, `qmc_test.go` with 20 binary fixtures in `testdata/`
+Tests: `cipher_map_test.go`, `cipher_rc4_test.go`, `key_derive_test.go`, `qmc_test.go`, `qmc_footer_musicex_test.go` (crafted MusicEx footer) with 23 binary fixtures in `testdata/`
 
 ## kgm/ -- Kugou
 
@@ -111,5 +111,6 @@ Binary data: `x2m_scramble_table.bin`, `x3m_scramble_table.bin` (embedded via `/
 
 | Date | Change |
 |------|--------|
+| 2026-06-07 | Hardened decoders against crafted input (bounds/padding/key checks; processor `recover()` backstop) and expanded the crafted-input tests — added `common/dispatch_test.go`, `kgm/kgm_header_test.go`, `kwm/kwm_test.go`, `ncm/ncm_test.go`, `qmc/qmc_footer_musicex_test.go` |
 | 2026-05-04 | Updated: added file-level detail tables, breadcrumb, interface details |
 | 2026-04-21 | Initial CLAUDE.md |

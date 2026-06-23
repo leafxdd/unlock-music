@@ -2,7 +2,7 @@
 
 # cmd/gui/ -- Wails v2 Desktop Application
 
-> Updated: 2026-05-04
+> Updated: 2026-06-08
 
 ## Module Purpose
 
@@ -10,7 +10,7 @@ Wails v2 GUI desktop application for Unlock Music. Provides a native window with
 
 ## Entry and Startup
 
-- **`main.go`**: Wails entry point. Embeds `frontend/dist` via `//go:embed`. Configures window (960x640), drag-and-drop (`DragAndDrop.EnableFileDrop`), and binds the `App` struct.
+- **`main.go`**: Wails entry point. Embeds `frontend/dist` via `//go:embed`. Configures window (960x640), drag-and-drop (`DragAndDrop.EnableFileDrop`), `OnStartup`/`OnShutdown` lifecycle hooks (`shutdown` calls `ffmpeg.Cleanup()` to remove any extracted embedded ffmpeg), and `WebviewGpuIsDisabled` (avoids a DWM hardware-cursor stall on startup); binds the `App` struct.
 - **`app.go`**: `App` struct with all methods exposed to the frontend via Wails bindings. Manages processing lifecycle with mutex-protected cancel function.
 - **`settings.go`**: Settings persistence to `os.UserConfigDir()/unlock-music-gui/settings.json`.
 
@@ -20,7 +20,7 @@ All methods on `App` are callable from JavaScript via `window.go.main.App.*`:
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
-| `CheckFFmpeg` | `() bool` | Checks if ffmpeg is on PATH |
+| `CheckFFmpeg` | `() bool` | Reports whether ffmpeg is usable via `ffmpeg.Available()` (`UM_FFMPEG` env -> embedded -> PATH) |
 | `GetSettings` | `() Settings` | Returns current settings |
 | `SaveSettings` | `(Settings) error` | Persists settings to disk |
 | `SelectInputDir` | `() (string, error)` | Native directory picker dialog |
@@ -82,9 +82,10 @@ Storage: `%APPDATA%/unlock-music-gui/settings.json` (Windows), `~/Library/Applic
 
 ```bash
 cd cmd/gui
-wails dev                    # Development with hot reload
-wails build                  # Production build
-wails build -platform windows/amd64  # Cross-platform build
+wails dev                                                  # Development with hot reload
+wails build                                                # Production build (ffmpeg from PATH)
+wails build -tags um_embed_ffmpeg                          # Bundle the embedded minimal ffmpeg
+wails build -platform windows/arm64 -tags um_embed_ffmpeg  # Cross-build (CC=aarch64-w64-mingw32-*, see build/ffmpeg/)
 ```
 
 ## Related Files
@@ -101,4 +102,5 @@ wails build -platform windows/amd64  # Cross-platform build
 
 | Date | Change |
 |------|--------|
+| 2026-06-08 | Documented bundled ffmpeg (`um_embed_ffmpeg`; win/amd64+arm64 GUI), `OnShutdown` -> `ffmpeg.Cleanup()`, and corrected `CheckFFmpeg` (now `ffmpeg.Available()`, not PATH-only) |
 | 2026-05-04 | Initial CLAUDE.md for GUI module |
