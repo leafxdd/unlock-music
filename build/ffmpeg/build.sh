@@ -28,12 +28,12 @@
 #   windows/arm64  CROSS_PREFIX=aarch64-w64-mingw32- CC=aarch64-w64-mingw32-clang
 #                  (llvm-mingw: github.com/mstorsjo/llvm-mingw/releases)
 # Cross builds compile a static zlib from source automatically (ZLIB_FROM_SOURCE);
-# nasm is only needed for amd64 targets (arm64 uses the integrated assembler).
+# nasm is only needed for amd64 targets (arm64 builds with --disable-asm, see below).
 #
 set -euo pipefail
 
 # ---- configuration ---------------------------------------------------------
-FFMPEG_REF="${FFMPEG_REF:-n7.1.1}"   # pinned ffmpeg release tag — the line to bump
+FFMPEG_REF="${FFMPEG_REF:-n8.1.2}"   # pinned ffmpeg release tag — the line to bump
 BUILD_REV="${BUILD_REV:-1}"          # bump when flags change but ffmpeg does not
 MAKE="${MAKE:-make}"
 JOBS="${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
@@ -173,6 +173,14 @@ if [ "$CROSS" = 1 ]; then
   [ -n "$CC" ] && configure_flags+=(--cc="$CC")
 elif [ "$GOOS" = windows ]; then
   configure_flags+=(--target-os="$FF_TARGET_OS" --arch="$FF_ARCH")
+fi
+
+# FFmpeg's hand-written aarch64 NEON (.S) fails to assemble with some llvm-mingw
+# clang versions (unrecognized mnemonics / "instruction requires: dotprod"), and
+# Unlock Music never runs SIMD-optimized codecs — cover re-encode + stream-copy
+# remux only — so the C fallbacks are equivalent. Drop the hand-written asm on arm64.
+if [ "$FF_ARCH" = aarch64 ]; then
+  configure_flags+=(--disable-asm)
 fi
 
 # ---- configure + build -----------------------------------------------------

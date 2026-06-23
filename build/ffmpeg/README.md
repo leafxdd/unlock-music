@@ -64,7 +64,7 @@ GOOS=windows GOARCH=arm64 CROSS_PREFIX=aarch64-w64-mingw32- \
     CC=aarch64-w64-mingw32-clang build/ffmpeg/build.sh
 ```
 
-`nasm` is only needed for amd64 targets (arm64 uses the integrated assembler).
+`nasm` is only needed for amd64 targets (arm64 builds with `--disable-asm`).
 macOS is intentionally not bundled — darwin falls back to a PATH ffmpeg
 (`brew install ffmpeg`).
 
@@ -106,7 +106,7 @@ because the native `C:\mingw64` gcc cannot read POSIX paths or paths with spaces
 ## Upgrading ffmpeg
 
 Change **`FFMPEG_REF`** at the top of `build.sh` (a pinned release tag, e.g.
-`n7.1.1`) and re-run. `./configure` errors loudly if any enabled component was
+`n8.1.2`) and re-run. `./configure` errors loudly if any enabled component was
 renamed or removed upstream, so breakage shows at build time. Re-run the project
 tests (`go test ./internal/... ./algo/...`) against the new build to confirm every
 command path still works, then commit the new `version.txt` value.

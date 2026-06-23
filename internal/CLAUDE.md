@@ -2,7 +2,7 @@
 
 # internal/ -- Internal Support Packages
 
-> Updated: 2026-05-04
+> Updated: 2026-06-24
 
 ## Structure
 
@@ -112,6 +112,7 @@ Used by QMC decoder to load encryption keys from QQ Music's local storage.
 
 | Date | Change |
 |------|--------|
+| 2026-06-24 | Bumped bundled ffmpeg n7.1.1 → n8.1.2. Security: `libavformat/mov.c` CENC integer overflow (~CVSS 9.8, <8.1) is reachable via our enabled `mov` demuxer; PixelSmash/`CVE-2026-8461` (MagicYUV decoder) does NOT affect us — that decoder is not built into our `--disable-everything` minimal ffmpeg. `configure` unchanged on our flag set |
 | 2026-06-08 | Bundled ffmpeg extended to multiple platforms: `build/ffmpeg/build.sh` cross-compiles windows/amd64+arm64 and linux/amd64+arm64 (cross-prefix/cc/arch/target-os + from-source static zlib); added `embed_{windows_arm64,linux_amd64,linux_arm64}.go` and widened `embed_unsupported.go`; macOS stays on PATH |
 | 2026-06-07 | Added bundled-ffmpeg support: `resolve.go` (binary resolution + `SupportsMetadata`), `embed_*.go` (`um_embed_ffmpeg` tag), DSD copies without metadata |
 | 2026-05-04 | Updated: added processor package docs, ffmpeg file details (hide_windows, options, meta_flac), updated structure diagram |
