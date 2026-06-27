@@ -132,7 +132,7 @@ onUnmounted(() => {
 
 .dropzone.dragging {
   border-color: var(--accent);
-  background: rgba(108, 140, 255, 0.05);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .dropzone-inner {

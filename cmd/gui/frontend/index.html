@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Unlock Music</title>
+    <script>
+      // Set the theme attribute before any CSS applies, so the first paint
+      // already matches the saved preference (no dark→light flash). Mirrors the
+      // resolve logic in src/composables/useTheme.ts.
+      (function () {
+        try {
+          var p = localStorage.getItem('um-theme') || 'system'
+          var t =
+            p === 'light' || p === 'dark'
+              ? p
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+          document.documentElement.setAttribute('data-theme', t)
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

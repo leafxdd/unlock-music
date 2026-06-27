@@ -1,4 +1,15 @@
 :root {
+  /* Theme-independent tokens */
+  --radius: 8px;
+  --radius-lg: 12px;
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Dark theme — the default when no data-theme is set */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
   --bg-primary: #0f1117;
   --bg-secondary: #1a1d27;
   --bg-tertiary: #242836;
@@ -12,11 +23,27 @@
   --warning: #fbbf24;
   --error: #f87171;
   --border: #2d3244;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Light theme — saturated accents/status colors are darkened so they stay
+   legible (and keep white button text readable) on a light background. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg-primary: #f3f4f7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eceef3;
+  --bg-hover: #e3e6ed;
+  --text-primary: #1b1e28;
+  --text-secondary: #545a6a;
+  --text-muted: #898f9e;
+  --accent: #4263eb;
+  --accent-hover: #3550c8;
+  --success: #16a34a;
+  --warning: #b45309;
+  --error: #dc2626;
+  --border: #dfe2e9;
+  --shadow: 0 4px 16px rgba(20, 24, 40, 0.1);
 }
 
 * {
@@ -34,6 +61,7 @@ body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar {

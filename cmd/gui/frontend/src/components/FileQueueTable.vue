@@ -171,10 +171,10 @@ function basename(p: string) {
   font-weight: 500;
   flex-shrink: 0;
 }
-.badge-done { background: rgba(74, 222, 128, 0.15); color: var(--success); }
-.badge-failed { background: rgba(248, 113, 113, 0.15); color: var(--error); }
-.badge-skipped { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
-.badge-active { background: rgba(108, 140, 255, 0.15); color: var(--accent); }
+.badge-done { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.badge-failed { background: color-mix(in srgb, var(--error) 15%, transparent); color: var(--error); }
+.badge-skipped { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
+.badge-active { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
 
 .item-output {
   font-size: 10px;
