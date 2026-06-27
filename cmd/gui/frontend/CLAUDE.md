@@ -6,7 +6,7 @@
 
 ## Module Purpose
 
-Vue 3 + Pinia + TypeScript frontend for the Unlock Music desktop GUI. Rendered inside Wails' WebView. Provides drag-and-drop file input, real-time file queue with progress, settings panel, and log viewer. Dark theme, left-right split layout.
+Vue 3 + Pinia + TypeScript frontend for the Unlock Music desktop GUI. Rendered inside Wails' WebView. Provides drag-and-drop file input, real-time file queue with progress, settings panel, and log viewer. Light/dark theming with system-adaptive switching, left-right split layout.
 
 ## Tech Stack
 
@@ -116,18 +116,28 @@ interface Settings { inputDir, outputDir, skipNoop, removeSource, updateMetadata
 
 ## Design System (`assets/tokens.css`)
 
-Dark theme only. Key tokens:
+Light and dark themes, both defined as CSS variables; components reference only the
+variables, so changing or adding a theme needs no component edits.
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--bg-primary` | `#0f1117` | Page background |
-| `--bg-secondary` | `#1a1d27` | Card/panel background |
-| `--accent` | `#6c8cff` | Primary actions, active tabs |
-| `--success` | `#4ade80` | Done status |
-| `--error` | `#f87171` | Failed status, errors |
-| `--warning` | `#fbbf24` | Skipped status |
-| `--font-sans` | IBM Plex Sans | UI text |
-| `--font-mono` | JetBrains Mono | Paths, logs, code |
+- **Selection**: a `data-theme` attribute on `<html>` (`dark` is the default rule set,
+  `light` overrides). An inline boot script in `index.html` sets it before first paint
+  (no flash); `composables/useTheme.ts` drives it at runtime.
+- **Preference**: `system` (default) | `light` | `dark`, persisted in `localStorage`
+  (`um-theme`); `system` follows `prefers-color-scheme` and reacts to OS changes live.
+- Theme-independent tokens (`--radius*`, `--font-*`) stay in the base `:root`.
+
+Key color tokens (dark / light):
+
+| Token | Dark | Light | Usage |
+|-------|------|-------|-------|
+| `--bg-primary` | `#0f1117` | `#f3f4f7` | Page background |
+| `--bg-secondary` | `#1a1d27` | `#ffffff` | Card/panel background |
+| `--accent` | `#6c8cff` | `#4263eb` | Primary actions, active tabs |
+| `--success` | `#4ade80` | `#16a34a` | Done status |
+| `--error` | `#f87171` | `#dc2626` | Failed status, errors |
+| `--warning` | `#fbbf24` | `#b45309` | Skipped status |
+
+Fonts: `--font-sans` (IBM Plex Sans), `--font-mono` (JetBrains Mono).
 
 ## Key Features
 
@@ -157,6 +167,7 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 | `src/main.ts` | Vue + Pinia initialization |
 | `src/types.ts` | Shared TypeScript interfaces |
 | `src/composables/useWails.ts` | Wails backend proxy + event composable |
+| `src/composables/useTheme.ts` | Theme preference (system/light/dark) + `data-theme` apply, localStorage-persisted |
 | `src/stores/queue.ts` | File queue state management |
 | `src/stores/settings.ts` | Settings state + ffmpeg detection |
 | `src/stores/logs.ts` | Log buffer (500 max) |
@@ -166,8 +177,8 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 | `src/components/ProgressPanel.vue` | Overall progress bar |
 | `src/components/SettingsPanel.vue` | Directory, processing options, advanced settings |
 | `src/components/LogPanel.vue` | Scrollable log viewer |
-| `src/assets/tokens.css` | CSS design tokens (dark theme) |
-| `index.html` | HTML entry point |
+| `src/assets/tokens.css` | CSS design tokens — light + dark sets, `data-theme` switch |
+| `index.html` | HTML entry point (+ inline no-flash theme boot script) |
 | `vite.config.ts` | Vite + Vue plugin + `@` alias |
 | `package.json` | NPM dependencies and scripts |
 
@@ -175,4 +186,5 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 
 | Date | Change |
 |------|--------|
+| 2026-06-27 | Added light theme + system-adaptive switching: `data-theme` token sets in tokens.css, `useTheme` composable (system/light/dark, localStorage `um-theme`), no-flash inline boot script in index.html, header toggle button; badges/drag-highlight use `color-mix` to track the theme |
 | 2026-05-04 | Initial CLAUDE.md for frontend module |

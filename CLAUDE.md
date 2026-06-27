@@ -168,7 +168,7 @@ npm install --prefix cmd/gui/frontend  # Install frontend deps
 - Go: standard library style, `zap` for logging, context for cancellation
 - Frontend: Vue 3 Composition API with `<script setup>`, Pinia stores, TypeScript strict mode
 - CSS: custom design tokens via CSS variables (`tokens.css`), no component library
-- Dark theme only (hardcoded in `tokens.css`)
+- Theming: light + dark token sets in `tokens.css`, selected via a `data-theme` attribute; defaults to following the OS (`prefers-color-scheme`), with a manual override persisted in `localStorage` (frontend-only, see `cmd/gui/frontend/src/composables/useTheme.ts`)
 
 ## AI Usage Notes
 
