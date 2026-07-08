@@ -1,7 +1,24 @@
 <script setup lang="ts">
+import { ref, computed, watch, nextTick } from 'vue'
 import { useQueueStore } from '@/stores/queue'
 
 const queueStore = useQueueStore()
+
+const scrollEl = ref<HTMLElement>()
+
+// Only one file is ever processing at a time; find it and, whenever it changes,
+// scroll it into view so the list tracks progress instead of staying at the top.
+const ACTIVE_STATUSES = new Set(['validating', 'decrypting', 'metadata', 'writing'])
+const activePath = computed(
+  () => queueStore.list.find(i => ACTIVE_STATUSES.has(i.status))?.path ?? null,
+)
+
+watch(activePath, async (p) => {
+  if (!p) return
+  await nextTick()
+  const el = scrollEl.value?.querySelector(`[data-path="${CSS.escape(p)}"]`) as HTMLElement | null
+  el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+})
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
@@ -39,7 +56,7 @@ function basename(p: string) {
       <span v-if="queueStore.failedCount" class="stat stat-failed">{{ queueStore.failedCount }} 失败</span>
       <button class="btn-clear" @click="queueStore.clear()">清空</button>
     </div>
-    <div class="list-scroll">
+    <div ref="scrollEl" class="list-scroll">
       <div v-if="queueStore.list.length === 0" class="empty">
         <span>等待文件输入…</span>
       </div>
@@ -48,6 +65,7 @@ function basename(p: string) {
         :key="item.path"
         class="item"
         :class="statusClass(item.status)"
+        :data-path="item.path"
       >
         <div class="item-top">
           <span class="filename" :title="item.path">{{ basename(item.path) }}</span>
@@ -70,11 +88,10 @@ function basename(p: string) {
 
 <style scoped>
 .queue-panel {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .panel-header {

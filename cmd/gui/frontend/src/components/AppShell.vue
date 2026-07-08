@@ -5,7 +5,6 @@ import { useQueueStore } from '@/stores/queue'
 import { useLogsStore } from '@/stores/logs'
 import { useWailsEvent } from '@/composables/useWails'
 import DropZoneCard from './DropZoneCard.vue'
-import FileQueueTable from './FileQueueTable.vue'
 import SettingsPanel from './SettingsPanel.vue'
 import ProgressPanel from './ProgressPanel.vue'
 import LogPanel from './LogPanel.vue'
@@ -83,10 +82,7 @@ useWailsEvent('processing:error', (msg: string) => {
 
     <main class="content">
       <template v-if="activeTab === 'queue'">
-        <div class="queue-split">
-          <DropZoneCard class="split-left" />
-          <FileQueueTable class="split-right" />
-        </div>
+        <DropZoneCard class="queue-main" />
         <ProgressPanel />
       </template>
       <SettingsPanel v-else-if="activeTab === 'settings'" />
@@ -174,20 +170,8 @@ useWailsEvent('processing:error', (msg: string) => {
   gap: 12px;
 }
 
-.queue-split {
+.queue-main {
   flex: 1;
-  display: flex;
-  gap: 12px;
   min-height: 0;
-}
-
-.split-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.split-right {
-  flex: 1;
-  min-width: 0;
 }
 </style>

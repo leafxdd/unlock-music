@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useQueueStore } from '@/stores/queue'
 import { useSettingsStore } from '@/stores/settings'
 import { backend } from '@/composables/useWails'
+import FileQueueTable from './FileQueueTable.vue'
 
 const queueStore = useQueueStore()
 const settingsStore = useSettingsStore()
 const dragging = ref(false)
+const hasItems = computed(() => queueStore.list.length > 0)
 
 async function selectFiles() {
   const files = await backend.selectInputFiles()
@@ -74,13 +76,13 @@ onUnmounted(() => {
 <template>
   <div
     class="dropzone"
-    :class="{ dragging }"
+    :class="{ dragging, 'has-items': hasItems }"
     style="--wails-drop-target: drop"
     @dragover.prevent="dragging = true"
     @dragleave="dragging = false"
     @drop.prevent="dragging = false"
   >
-    <div class="dropzone-inner">
+    <div v-if="!hasItems" class="dropzone-inner">
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/>
@@ -92,6 +94,7 @@ onUnmounted(() => {
         <button class="btn btn-secondary" @click="selectDir">选择目录</button>
       </div>
     </div>
+    <FileQueueTable v-else class="dropzone-queue" />
 
     <div class="bottom-section">
       <div class="output-row">
@@ -133,6 +136,17 @@ onUnmounted(() => {
 .dropzone.dragging {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* Once files are queued the card behaves like a panel rather than an invitation:
+   a solid border reads better around a list than the dashed drop hint. */
+.dropzone.has-items {
+  border-style: solid;
+}
+
+.dropzone-queue {
+  flex: 1;
+  min-height: 0;
 }
 
 .dropzone-inner {
