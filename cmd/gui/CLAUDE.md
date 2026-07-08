@@ -2,7 +2,7 @@
 
 # cmd/gui/ -- Wails v2 Desktop Application
 
-> Updated: 2026-06-08
+> Updated: 2026-07-09
 
 ## Module Purpose
 
@@ -10,7 +10,7 @@ Wails v2 GUI desktop application for Unlock Music. Provides a native window with
 
 ## Entry and Startup
 
-- **`main.go`**: Wails entry point. Embeds `frontend/dist` via `//go:embed`. Configures window (960x640), drag-and-drop (`DragAndDrop.EnableFileDrop`), `OnStartup`/`OnShutdown` lifecycle hooks (`shutdown` calls `ffmpeg.Cleanup()` to remove any extracted embedded ffmpeg), and `WebviewGpuIsDisabled` (avoids a DWM hardware-cursor stall on startup); binds the `App` struct.
+- **`main.go`**: Wails entry point. Embeds `frontend/dist` via `//go:embed`. Configures window (960x640), drag-and-drop (`DragAndDrop.EnableFileDrop`), `OnStartup`/`OnShutdown` lifecycle hooks (`shutdown` calls `ffmpeg.Cleanup()` to remove any extracted embedded ffmpeg), and keeps WebView2 GPU acceleration enabled (`WebviewGpuIsDisabled: false`) — disabling it once avoided a startup hardware-cursor stall, but that forced software rendering which blurred text when the window moved across monitors with different DPI scaling; binds the `App` struct.
 - **`app.go`**: `App` struct with all methods exposed to the frontend via Wails bindings. Manages processing lifecycle with mutex-protected cancel function.
 - **`settings.go`**: Settings persistence to `os.UserConfigDir()/unlock-music-gui/settings.json`.
 
@@ -102,5 +102,6 @@ wails build -platform windows/arm64 -tags um_embed_ffmpeg  # Cross-build (CC=aar
 
 | Date | Change |
 |------|--------|
+| 2026-07-09 | Re-enabled WebView2 GPU acceleration (`WebviewGpuIsDisabled: false`) to fix blurry text when the window is dragged between monitors with different DPI scaling |
 | 2026-06-08 | Documented bundled ffmpeg (`um_embed_ffmpeg`; win/amd64+arm64 GUI), `OnShutdown` -> `ffmpeg.Cleanup()`, and corrected `CheckFFmpeg` (now `ffmpeg.Available()`, not PATH-only) |
 | 2026-05-04 | Initial CLAUDE.md for GUI module |

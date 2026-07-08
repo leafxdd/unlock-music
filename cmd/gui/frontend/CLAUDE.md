@@ -2,11 +2,11 @@
 
 # cmd/gui/frontend/ -- Vue 3 Frontend
 
-> Updated: 2026-05-04
+> Updated: 2026-07-09
 
 ## Module Purpose
 
-Vue 3 + Pinia + TypeScript frontend for the Unlock Music desktop GUI. Rendered inside Wails' WebView. Provides drag-and-drop file input, real-time file queue with progress, settings panel, and log viewer. Light/dark theming with system-adaptive switching, left-right split layout.
+Vue 3 + Pinia + TypeScript frontend for the Unlock Music desktop GUI. Rendered inside Wails' WebView. Provides drag-and-drop file input, real-time file queue with progress, settings panel, and log viewer. Light/dark theming with system-adaptive switching; the queue tab is a single unified card.
 
 ## Tech Stack
 
@@ -22,17 +22,15 @@ Vue 3 + Pinia + TypeScript frontend for the Unlock Music desktop GUI. Rendered i
 
 ```
 +---------------------------------------------------+
-|  Header (logo + "Unlock Music" + tab navigation)  |
+|  Header (logo + "Unlock Music" + tabs + theme)    |
 |  Tabs: [文件队列] [设置] [日志]                       |
-+------------------------+--------------------------+
-|                        |                          |
-|   DropZoneCard         |   FileQueueTable         |
-|   (drag-drop area      |   (file list with        |
-|    + file/dir buttons   |    status badges &       |
-|    + output dir picker  |    progress bars)        |
-|    + start/stop btn)    |                          |
-|                        |                          |
-+------------------------+--------------------------+
++---------------------------------------------------+
+|   DropZoneCard (one card = the whole queue tab):   |
+|     empty  -> drop hint + 选择文件 / 选择目录         |
+|     filled -> queue header + file list             |
+|               (auto-scrolls to the active file)    |
+|     bottom -> output dir picker + start/stop       |
++---------------------------------------------------+
 |   ProgressPanel (overall progress bar)             |
 +---------------------------------------------------+
 ```
@@ -43,9 +41,9 @@ Settings and Log panels are shown when their respective tabs are active.
 
 ```
 App.vue
-  +-- AppShell.vue (main layout, tab switching, event wiring)
-        +-- DropZoneCard.vue (left panel: drag-drop, file/dir picker, output dir, start/stop)
-        +-- FileQueueTable.vue (right panel: file list with status, progress, clear)
+  +-- AppShell.vue (main layout, tab switching, event wiring, theme toggle)
+        +-- DropZoneCard.vue (queue tab: drop hint when empty, embeds FileQueueTable when filled; output dir + start/stop)
+        |     +-- FileQueueTable.vue (file list with status/progress; auto-scrolls to the active file)
         +-- ProgressPanel.vue (bottom: overall progress bar)
         +-- SettingsPanel.vue (tab: directory, processing options, advanced)
         +-- LogPanel.vue (tab: scrollable log with level coloring)
@@ -141,12 +139,14 @@ Fonts: `--font-sans` (IBM Plex Sans), `--font-mono` (JetBrains Mono).
 
 ## Key Features
 
+- **Unified queue card**: the drop zone and the file queue share one card — drop hint + file/dir buttons when empty, file list once populated
 - **Drag-and-drop**: Native Wails file drop with visual feedback (border color change)
 - **Batch processing**: Multiple files/directories queued and processed sequentially
 - **Real-time progress**: Per-file progress bars (byte-level) + overall progress (file count)
 - **FFmpeg detection**: Settings panel disables "update metadata" toggle when ffmpeg not found, shows warning
 - **Status tracking**: Each file shows status badge (queued/validating/decrypting/metadata/writing/done/skipped/failed) with colored indicators
 - **Title bar drag**: Header has `--wails-draggable: drag` for native window dragging
+- **Auto-scroll queue**: while processing, the file list scrolls to keep the current file in view
 - **Auto-scroll logs**: Log panel auto-scrolls to bottom on new entries
 
 ## Build
@@ -172,8 +172,8 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 | `src/stores/settings.ts` | Settings state + ffmpeg detection |
 | `src/stores/logs.ts` | Log buffer (500 max) |
 | `src/components/AppShell.vue` | Main layout, tab navigation, event wiring |
-| `src/components/DropZoneCard.vue` | Drag-drop zone, file/dir pickers, start/stop |
-| `src/components/FileQueueTable.vue` | File list with status badges + progress |
+| `src/components/DropZoneCard.vue` | Queue-tab card: drop hint when empty, embeds FileQueueTable when filled; output dir + start/stop |
+| `src/components/FileQueueTable.vue` | File list with status badges + progress; auto-scrolls to the active file while processing |
 | `src/components/ProgressPanel.vue` | Overall progress bar |
 | `src/components/SettingsPanel.vue` | Directory, processing options, advanced settings |
 | `src/components/LogPanel.vue` | Scrollable log viewer |
@@ -186,5 +186,6 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 
 | Date | Change |
 |------|--------|
+| 2026-07-09 | Merged the drop zone and file queue into one card (drop hint when empty, file list when filled); the list auto-scrolls to the active file while processing. DropZoneCard now embeds FileQueueTable; the queue tab is single-column |
 | 2026-06-27 | Added light theme + system-adaptive switching: `data-theme` token sets in tokens.css, `useTheme` composable (system/light/dark, localStorage `um-theme`), no-flash inline boot script in index.html, header toggle button; badges/drag-highlight use `color-mix` to track the theme |
 | 2026-05-04 | Initial CLAUDE.md for frontend module |
