@@ -186,6 +186,7 @@ Output: `frontend/dist/` (embedded into Go binary via `//go:embed`).
 
 | Date | Change |
 |------|--------|
+| 2026-09-19 | Made the header theme toggle legible: it is now a bordered pill with icon + text label (跟随系统/浅色/深色). Its CSS is scoped as `.tabs .theme-toggle` so it outweighs `.tabs button`, whose `padding: 6px 14px` had been squeezing the 16px icon out of the 30px button box |
 | 2026-07-09 | Merged the drop zone and file queue into one card (drop hint when empty, file list when filled); the list auto-scrolls to the active file while processing. DropZoneCard now embeds FileQueueTable; the queue tab is single-column |
 | 2026-06-27 | Added light theme + system-adaptive switching: `data-theme` token sets in tokens.css, `useTheme` composable (system/light/dark, localStorage `um-theme`), no-flash inline boot script in index.html, header toggle button; badges/drag-highlight use `color-mix` to track the theme |
 | 2026-05-04 | Initial CLAUDE.md for frontend module |
