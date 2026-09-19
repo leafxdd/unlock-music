@@ -57,25 +57,26 @@ useWailsEvent('processing:error', (msg: string) => {
           :aria-label="`主题：${themeLabel}`"
           @click="cycleTheme"
         >
-          <svg v-if="themePref === 'system'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+          <svg v-if="themePref === 'system'" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3.5" width="20" height="14" rx="2"/>
             <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
+            <line x1="12" y1="17.5" x2="12" y2="21"/>
           </svg>
-          <svg v-else-if="themePref === 'light'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          <svg v-else-if="themePref === 'light'" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.2"/>
+            <line x1="12" y1="0.8" x2="12" y2="3.6"/>
+            <line x1="12" y1="20.4" x2="12" y2="23.2"/>
+            <line x1="3.8" y1="3.8" x2="5.8" y2="5.8"/>
+            <line x1="18.2" y1="18.2" x2="20.2" y2="20.2"/>
+            <line x1="0.8" y1="12" x2="3.6" y2="12"/>
+            <line x1="20.4" y1="12" x2="23.2" y2="12"/>
+            <line x1="3.8" y1="20.2" x2="5.8" y2="18.2"/>
+            <line x1="18.2" y1="5.8" x2="20.2" y2="3.8"/>
           </svg>
-          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg v-else width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
+          <span>{{ themeLabel }}</span>
         </button>
       </nav>
     </header>
@@ -142,23 +143,33 @@ useWailsEvent('processing:error', (msg: string) => {
   color: #fff;
 }
 
-.theme-toggle {
+/* Scoped under .tabs so it outweighs the `.tabs button` rule above — otherwise
+   that rule's horizontal padding squeezes the icon out of the button box. */
+.tabs .theme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
+  gap: 6px;
   height: 30px;
-  margin-left: 8px;
+  padding: 0 10px;
+  margin-left: 12px;
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-secondary);
-  transition: background 0.15s, color 0.15s;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 12px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   --wails-draggable: no-drag;
 }
 
-.theme-toggle:hover {
+.tabs .theme-toggle svg {
+  flex-shrink: 0;
+}
+
+.tabs .theme-toggle:hover {
   background: var(--bg-hover);
-  color: var(--text-primary);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .content {
